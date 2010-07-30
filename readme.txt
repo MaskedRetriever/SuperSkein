@@ -18,6 +18,9 @@ Space between the layers, obviously.  This affects both where the slicer cuts an
 --->String FileName = "sculpt_dragon.stl";
 
 
+**Modularity note
+I think most of the things we'll do to the file are going to be clearly divided between things we do to the whole mesh or to individual layers.  I think rather than cluttering the SuperSkein.pde file we should make every effort to "push down" modifications to the objects they affect.
+
 
 
 *Hacking NOTES

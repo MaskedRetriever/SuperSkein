@@ -6,10 +6,20 @@
 
 //Slicing Parameters-- someone should make
 //a GUI menu at some point...
-//Obviously not as many of them now...
+//Sorted here according to units
+
+//"funny" dimensionality
 float PrintHeadSpeed = 2000.0;
+
+//Measured in millimeters
 float LayerThickness = 0.3;
+float Sink = 2;
+
+//Dimensionless
+float PreScale = 1;
 String FileName = "sculpt_dragon.stl";
+
+
 
 
 //End of "easy" modifications you can make...
@@ -32,14 +42,20 @@ void setup(){
   //Load the .stl
   //Later we should totally make this runtime...
   STLFile = new Mesh(FileName);
+
+
   //Scale and locate the mesh
-  //STLFile.Scale(10);
-  
+  STLFile.Scale(PreScale);
   //Put the mesh on the platform:
   STLFile.Translate(0,0,-STLFile.bz1);
   STLFile.Translate(0,0,-LayerThickness);  
-  print("File Loaded, Slicing:\n");
+  STLFile.Translate(0,0,-Sink);
 
+
+  print("File Loaded, Slicing:\n");
+print("X: " + CleanFloat(STLFile.bx1) + " - " + CleanFloat(STLFile.bx2) + "   ");
+print("Y: " + CleanFloat(STLFile.by1) + " - " + CleanFloat(STLFile.by2) + "   ");
+print("Z: " + CleanFloat(STLFile.bz1) + " - " + CleanFloat(STLFile.bz2) + "   \n");
 //Spit GCODE!
 Line2D Intersection;
 output = createWriter("output.gcode");
@@ -59,7 +75,7 @@ for(float ZLevel = 0;ZLevel<(STLFile.bz2-LayerThickness);ZLevel=ZLevel+LayerThic
 {
   ThisSlice = new Slice(STLFile,ZLevel);
   print("Slicing: ");
-  TextStatusBar(ZLevel/STLFile.bz2,40);
+  TextStatusBar(ZLevel/STLFile.bz2,50);
   print("\n");
     for(int j = ThisSlice.Lines.size()-1;j>=0;j--)
     {
@@ -70,11 +86,12 @@ for(float ZLevel = 0;ZLevel<(STLFile.bz2-LayerThickness);ZLevel=ZLevel+LayerThic
 output.flush();
 output.close();
 
+
 print("Finished Slicing!  Bounding Box is:\n");
 print("X: " + CleanFloat(STLFile.bx1) + " - " + CleanFloat(STLFile.bx2) + "   ");
 print("Y: " + CleanFloat(STLFile.by1) + " - " + CleanFloat(STLFile.by2) + "   ");
 print("Z: " + CleanFloat(STLFile.bz1) + " - " + CleanFloat(STLFile.bz2) + "   ");
-
+if(STLFile.bz1<0)print("\n(Values below z=0 not exported.)");
 
   //THEN scale to fit
   if((STLFile.bx2-STLFile.bx1)>(STLFile.by2-STLFile.by1))

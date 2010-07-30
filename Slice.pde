@@ -42,7 +42,8 @@ class Slice {
 
     int iNextLine;
     
-    while(Lines.size()<FinalSize)
+    //while(Lines.size()<FinalSize)
+    while(UnsortedLines.size()>0)
     {
       Line2D CLine = (Line2D) Lines.get(Lines.size()-1);//Get last
       iNextLine = (Lines.size()-1);
@@ -68,7 +69,7 @@ class Slice {
       }
 
       Line2D LineToMove = (Line2D) UnsortedLines.get(iNextLine);
-      if(min_dflipped>min_d)LineToMove.Flip();
+      //if(min_dflipped>min_d)LineToMove.Flip();
       Lines.add(LineToMove);
       UnsortedLines.remove(iNextLine);
     }

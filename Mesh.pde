@@ -4,13 +4,14 @@ class Mesh {
   ArrayList Triangles;
   float bx1,by1,bz1,bx2,by2,bz2; //bounding box
 
-
+  float Sink;
 
   //Mesh Loading routine
   Mesh(String FileName)
   {
     byte b[] = loadBytes(FileName);
     Triangles = new ArrayList();
+    Sink=0;
     float[] Tri = new float[9];
     //Skip the header
     int offs = 84;
@@ -51,8 +52,15 @@ class Mesh {
 
   void CalculateBoundingBox()
   {
-    for(int i = Triangles.size()-1;i>=0;i--)
+      bx1 = 10000;
+      bx2 = -10000;
+      by1 = 10000;
+      by2 = -10000;
+      bz1 = 10000;
+      bz2 = -10000;
+      for(int i = Triangles.size()-1;i>=0;i--)
     {
+
       Triangle tri = (Triangle) Triangles.get(i);
       if(tri.x1<bx1)bx1=tri.x1;
       if(tri.x2<bx1)bx1=tri.x2;
@@ -74,6 +82,8 @@ class Mesh {
       if(tri.z3>bz2)bz2=tri.z3;
     }    
   }
+  
+
   
     
 }  
