@@ -15,12 +15,17 @@ float PrintHeadSpeed = 2000.0;
 float LayerThickness = 0.3;
 float Sink = 2;
 
+
 //Dimensionless
-float PreScale = 1;
-String FileName = "sculpt_dragon.stl";
+float PreScale = 20;
+String FileName = "triess_forprint.stl";
 
 
-
+//Display Properties
+float BuildPlatformWidth = 100;
+float BuildPlatformHeight = 100;
+float GridSpacing = 10;
+float DisplayScale = 4;
 
 //End of "easy" modifications you can make...
 //Naturally I encourage everyone to learn and
@@ -35,7 +40,7 @@ float MeshHeight;
 
 
 void setup(){
-  size(640,360);
+  size(int(BuildPlatformWidth*DisplayScale),int(BuildPlatformHeight*DisplayScale));
 
   Slice = new ArrayList();
   print("Loading STL...\n");
@@ -46,63 +51,68 @@ void setup(){
 
   //Scale and locate the mesh
   STLFile.Scale(PreScale);
-  //Put the mesh on the platform:
-  STLFile.Translate(0,0,-STLFile.bz1);
+  //Put the mesh in the middle of the platform:
+  STLFile.Translate(-STLFile.bx1,-STLFile.by1,-STLFile.bz1);
+  STLFile.Translate(-STLFile.bx2/2,-STLFile.by2/2,0);
   STLFile.Translate(0,0,-LayerThickness);  
   STLFile.Translate(0,0,-Sink);
 
 
   print("File Loaded, Slicing:\n");
-print("X: " + CleanFloat(STLFile.bx1) + " - " + CleanFloat(STLFile.bx2) + "   ");
-print("Y: " + CleanFloat(STLFile.by1) + " - " + CleanFloat(STLFile.by2) + "   ");
-print("Z: " + CleanFloat(STLFile.bz1) + " - " + CleanFloat(STLFile.bz2) + "   \n");
-//Spit GCODE!
-Line2D Intersection;
-output = createWriter("output.gcode");
+  print("X: " + CleanFloat(STLFile.bx1) + " - " + CleanFloat(STLFile.bx2) + "   ");
+  print("Y: " + CleanFloat(STLFile.by1) + " - " + CleanFloat(STLFile.by2) + "   ");
+  print("Z: " + CleanFloat(STLFile.bz1) + " - " + CleanFloat(STLFile.bz2) + "   \n");
+  //Spit GCODE!
+  Line2D Intersection;
+  output = createWriter("output.gcode");
 
-//Header:
-output.println("G21");
-output.println("G90");
-output.println("M103");
-output.println("M105");
-output.println("M104 s220.0");
-output.println("M109 s110.0");
-output.println("M101");
+  //Header:
+  output.println("G21");
+  output.println("G90");
+  output.println("M103");
+  output.println("M105");
+  output.println("M104 s220.0");
+  output.println("M109 s110.0");
+  output.println("M101");
 
-Slice ThisSlice;
-float Layers = STLFile.bz2/LayerThickness;
-for(float ZLevel = 0;ZLevel<(STLFile.bz2-LayerThickness);ZLevel=ZLevel+LayerThickness)
-{
-  ThisSlice = new Slice(STLFile,ZLevel);
-  print("Slicing: ");
-  TextStatusBar(ZLevel/STLFile.bz2,50);
-  print("\n");
-    for(int j = ThisSlice.Lines.size()-1;j>=0;j--)
-    {
-      Line2D lin = (Line2D) ThisSlice.Lines.get(j);
-      output.println("G1 X" + lin.x1 + " Y" + lin.y1 + " Z" + ZLevel + " F" + PrintHeadSpeed);
-    }
-}
-output.flush();
-output.close();
-
-
-print("Finished Slicing!  Bounding Box is:\n");
-print("X: " + CleanFloat(STLFile.bx1) + " - " + CleanFloat(STLFile.bx2) + "   ");
-print("Y: " + CleanFloat(STLFile.by1) + " - " + CleanFloat(STLFile.by2) + "   ");
-print("Z: " + CleanFloat(STLFile.bz1) + " - " + CleanFloat(STLFile.bz2) + "   ");
-if(STLFile.bz1<0)print("\n(Values below z=0 not exported.)");
-
-  //THEN scale to fit
-  if((STLFile.bx2-STLFile.bx1)>(STLFile.by2-STLFile.by1))
+  Slice ThisSlice;
+  float Layers = STLFile.bz2/LayerThickness;
+  for(float ZLevel = 0;ZLevel<(STLFile.bz2-LayerThickness);ZLevel=ZLevel+LayerThickness)
   {
-    STLFile.Scale(width/(STLFile.bx2-STLFile.bx1));
+    ThisSlice = new Slice(STLFile,ZLevel);
+    print("Slicing: ");
+    TextStatusBar(ZLevel/STLFile.bz2,50);
+    print("\n");
+      for(int j = ThisSlice.Lines.size()-1;j>=0;j--)
+      {
+        Line2D lin = (Line2D) ThisSlice.Lines.get(j);
+        output.println("G1 X" + lin.x1 + " Y" + lin.y1 + " Z" + ZLevel + " F" + PrintHeadSpeed);
+      }
   }
-  else
-  {
-    STLFile.Scale(height/(STLFile.by2-STLFile.by1));
-  }
-  STLFile.Translate(-STLFile.bx1,-STLFile.by1,-STLFile.bz1);
+  output.flush();
+  output.close();
+
+
+  print("Finished Slicing!  Bounding Box is:\n");
+  print("X: " + CleanFloat(STLFile.bx1) + " - " + CleanFloat(STLFile.bx2) + "   ");
+  print("Y: " + CleanFloat(STLFile.by1) + " - " + CleanFloat(STLFile.by2) + "   ");
+  print("Z: " + CleanFloat(STLFile.bz1) + " - " + CleanFloat(STLFile.bz2) + "   ");
+  if(STLFile.bz1<0)print("\n(Values below z=0 not exported.)");
+
+  //THEN scale to fit the screen
+//  if((STLFile.bx2-STLFile.bx1)>(STLFile.by2-STLFile.by1))
+//  {
+//    STLFile.Scale(width/(STLFile.bx2-STLFile.bx1));
+//  }
+//  else
+//  {
+//    STLFile.Scale(height/(STLFile.by2-STLFile.by1));
+//  }
+
+  //Match viewport scale to 1cm per gridline
+  STLFile.Scale(DisplayScale);
+  STLFile.Translate(BuildPlatformWidth*DisplayScale/2,BuildPlatformHeight*DisplayScale/2,-STLFile.bz1);
+  //STLFile.Translate(-STLFile.bx1,-STLFile.by1,-STLFile.bz1);
   MeshHeight=STLFile.bz2-STLFile.bz1;
 
 }
@@ -128,9 +138,19 @@ void draw()
     //if(Intersection!=null)print(Intersection.x1 + " \n");
   }
 
+
+  //Draw the grid
+  stroke(80);
+  strokeWeight(1);
+  for(float px = 0; px<(BuildPlatformWidth*DisplayScale+1);px=px+GridSpacing*DisplayScale)line(px,0,px,BuildPlatformHeight*DisplayScale);
+  for(float py = 0; py<(BuildPlatformHeight*DisplayScale+1);py=py+GridSpacing*DisplayScale)line(0,py,BuildPlatformWidth*DisplayScale,py);
+  
+
+  //Draw the profile
+  stroke(255);
+  strokeWeight(2);
   for(int i = Slice.size()-1;i>=0;i--)
   {
-    stroke(255);
     Line2D lin = (Line2D) Slice.get(i);
     //lin.Scale(15);
     line(lin.x1,lin.y1,lin.x2,lin.y2);
