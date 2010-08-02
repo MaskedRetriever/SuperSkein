@@ -50,4 +50,10 @@ class Line2D {
     x2 = xn;
     y2 = yn;
   }
+  
+  float Length()
+  {
+    return sqrt(sq(y2-y1)+sq(x2-x1));
+  }
+  
 }  

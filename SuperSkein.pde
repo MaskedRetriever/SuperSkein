@@ -17,15 +17,17 @@ float Sink = 2;
 
 
 //Dimensionless
-float PreScale = 20;
-String FileName = "triess_forprint.stl";
+float PreScale = 0.6;
+//String FileName = "dense800ktris.stl";
+String FileName = "sculpt_dragon.stl";
+//String FileName = "linetesting.stl";
 
 
 //Display Properties
 float BuildPlatformWidth = 100;
 float BuildPlatformHeight = 100;
 float GridSpacing = 10;
-float DisplayScale = 4;
+float DisplayScale = 5;
 
 //End of "easy" modifications you can make...
 //Naturally I encourage everyone to learn and
@@ -64,6 +66,7 @@ void setup(){
   print("Z: " + CleanFloat(STLFile.bz1) + " - " + CleanFloat(STLFile.bz2) + "   \n");
   //Spit GCODE!
   Line2D Intersection;
+  Line2D lin;
   output = createWriter("output.gcode");
 
   //Header:
@@ -83,10 +86,12 @@ void setup(){
     print("Slicing: ");
     TextStatusBar(ZLevel/STLFile.bz2,50);
     print("\n");
-      for(int j = ThisSlice.Lines.size()-1;j>=0;j--)
+    lin = (Line2D) ThisSlice.Lines.get(0);
+    output.println("G1 X" + lin.x1 + " Y" + lin.y1 + " Z" + ZLevel + " F" + PrintHeadSpeed);
+      for(int j = 0;j<ThisSlice.Lines.size();j++)
       {
-        Line2D lin = (Line2D) ThisSlice.Lines.get(j);
-        output.println("G1 X" + lin.x1 + " Y" + lin.y1 + " Z" + ZLevel + " F" + PrintHeadSpeed);
+        lin = (Line2D) ThisSlice.Lines.get(j);
+        output.println("G1 X" + lin.x2 + " Y" + lin.y2 + " Z" + ZLevel + " F" + PrintHeadSpeed);
       }
   }
   output.flush();
@@ -155,6 +160,9 @@ void draw()
     //lin.Scale(15);
     line(lin.x1,lin.y1,lin.x2,lin.y2);
   }
+  //Note, the profile contains everything you need
+  //to do a full Skeinview-style display; we need
+  //extrude colors and especially arrows!
 
 }
 

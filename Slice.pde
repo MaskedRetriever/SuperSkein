@@ -7,10 +7,10 @@ class Slice {
   //Right now this is all in the constructor.
   //It might make more sense to split these
   //out but that's a pretty minor difference
-  //at the moment.  
+  //at the moment.
   Slice(Mesh InMesh, float ZLevel) {
     
-    ArrayList UnsortedLines;    
+    ArrayList UnsortedLines;
     Line2D Intersection;
     UnsortedLines = new ArrayList();
     for(int i = InMesh.Triangles.size()-1;i>=0;i--)
@@ -25,7 +25,7 @@ class Slice {
         
     //Slice Sort: arrange the line segments so that
     //each segment leads to the nearest available
-    //segment.  This is accomplished by using two
+    //segment. This is accomplished by using two
     //arraylists of lines, and at each step moving
     //the nearest available line segment from the
     //unsorted pile to the next slot in the sorted pile.
@@ -43,7 +43,7 @@ class Slice {
     int iNextLine;
     
     //while(Lines.size()<FinalSize)
-    while(UnsortedLines.size()>0)
+    while(UnsortedLines.size()>8)
     {
       Line2D CLine = (Line2D) Lines.get(Lines.size()-1);//Get last
       iNextLine = (Lines.size()-1);
@@ -59,7 +59,7 @@ class Slice {
         {
           iNextLine=i;
           min_d = d;
-        } 
+        }
         if(dflipped<min_dflipped)
         {
           iNextLine=i;
@@ -78,4 +78,4 @@ class Slice {
 
 
 
-}  
+} 
