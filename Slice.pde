@@ -35,42 +35,106 @@ class Slice {
     UnsortedLines.remove(0);
 
     //ratchets for distance
-    //dflipped exists to catch flipped lines
-    float d,min_d,dflipped,min_dflipped;
-    min_d = 10000;
-    min_dflipped = 10000;
+    //enddist2 exists to catch flipped lines
+    float frontdist1, frontdist2, enddist1, enddist2;
+    float mindist = 10000;
 
     int iNextLine;
+    int iFirstLine = 0;
+
+    float epsilon = 1e-6;
     
+    Line2D FirstSeg = (Line2D) Lines.get(0);//Get First
+
     //while(Lines.size()<FinalSize)
-    while(UnsortedLines.size()>8)
+    while(UnsortedLines.size()>0)
     {
-      Line2D CLine = (Line2D) Lines.get(Lines.size()-1);//Get last
+      Line2D EndSeg   = (Line2D) Lines.get(Lines.size()-1);//Get last
       iNextLine = (Lines.size()-1);
-      min_d = 10000;
-      min_dflipped = 10000;
+      mindist = 10000;
+      boolean doflip = false;
+      boolean doprepend = false;
       for(int i = UnsortedLines.size()-1;i>=0;i--)
       {
         Line2D LineCandidate = (Line2D) UnsortedLines.get(i);
-        d = pow((LineCandidate.x1-CLine.x2),2) + pow((LineCandidate.y1-CLine.y2),2);
-        dflipped = pow((LineCandidate.x1-CLine.x1),2) + pow((LineCandidate.y1-CLine.y1),2);
+        enddist1   = mag(LineCandidate.x1-EndSeg.x2,   LineCandidate.y1-EndSeg.y2);
+        enddist2   = mag(LineCandidate.x2-EndSeg.x2,   LineCandidate.y2-EndSeg.y2); // flipped
+        frontdist1 = mag(LineCandidate.x2-FirstSeg.x1, LineCandidate.y2-FirstSeg.y1);
+        frontdist2 = mag(LineCandidate.x1-FirstSeg.x1, LineCandidate.y1-FirstSeg.y1); // flipped
           
-        if(d<min_d)
+	if(enddist1<epsilon)
+	{
+	  // We found exact match.  Break out early.
+	  doflip = false;
+	  doprepend = false;
+	  iNextLine = i;
+          mindist = 0;
+	  break;
+	}
+
+	if(enddist2<epsilon)
+	{
+	  // We found exact flipped match.  Break out early.
+	  doflip = true;
+	  doprepend = false;
+	  iNextLine = i;
+          mindist = 0;
+	  break;
+	}
+
+	if(frontdist1<epsilon)
+	{
+	  // We found exact match.  Break out early.
+	  doflip = false;
+	  doprepend = true;
+	  iNextLine = i;
+          mindist = 0;
+	  break;
+	}
+
+	if(frontdist2<epsilon)
+	{
+	  // We found exact flipped match.  Break out early.
+	  doflip = true;
+	  doprepend = true;
+	  iNextLine = i;
+          mindist = 0;
+	  break;
+	}
+
+        if(enddist1<mindist)
         {
+	  // remember closest nonexact matches to end
+	  doflip = false;
+	  doprepend = false;
           iNextLine=i;
-          min_d = d;
+          mindist = enddist1;
         }
-        if(dflipped<min_dflipped)
+
+        if(enddist2<mindist)
         {
+	  // remember closest flipped nonexact matches to end
+	  doflip = true;
+	  doprepend = false;
           iNextLine=i;
-          min_dflipped = dflipped;
+          mindist = enddist2;
         }
- 
       }
 
       Line2D LineToMove = (Line2D) UnsortedLines.get(iNextLine);
-      //if(min_dflipped>min_d)LineToMove.Flip();
-      Lines.add(LineToMove);
+      if(doflip) {
+        LineToMove.Flip();
+      }
+      if(doprepend) {
+	FirstSeg = LineToMove;
+        Lines.add(iFirstLine,LineToMove);
+      } else {
+        Lines.add(LineToMove);
+	if(mindist>0) {
+	  FirstSeg = LineToMove;
+	  iFirstLine = Lines.size()-1;
+	}
+      }
       UnsortedLines.remove(iNextLine);
     }
   }
