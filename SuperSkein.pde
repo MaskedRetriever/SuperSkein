@@ -15,12 +15,11 @@ float PrintHeadSpeed = 2000.0;
 float LayerThickness = 0.3;
 float Sink = 2;
 
-
 //Dimensionless
 float PreScale = 0.6;
 //String FileName = "dense800ktris.stl";
 String FileName = "sculpt_dragon.stl";
-//String FileName = "linetesting.stl";
+//String FileName = "triess_forprint.stl";
 
 
 //Display Properties
@@ -41,10 +40,38 @@ PrintWriter output;
 float MeshHeight;
 
 
+//Thread Objects
+//Runnable FileLoad = new FileLoadProc();
+Runnable FileWrite = new FileWriteProc();
+Thread FileWriteThread, FileLoadThread;
+boolean FileWriteTrigger = false;
+boolean FileLoadTrigger = false;
+float FileWriteFraction = 0;
+
+
+int AppWidth = int(BuildPlatformWidth*DisplayScale);
+int AppHeight = int(BuildPlatformHeight*DisplayScale);
+
+//GUI Page Select
+int GUIPage = 0;
+
+//Page 0 GUI Widgets
+GUIButton FileWriteButton = new GUIButton(10,20,100,15, "Write File");
+GUIProgressBar FileWriteProgress = new GUIProgressBar(140,20,300,15);
+
+//AllPage GUI Widgets
+GUIButton RightButton = new GUIButton(AppWidth-90,AppHeight-20,80,15, "Right");
+GUIButton LeftButton = new GUIButton(10,AppHeight-20,80,15, "Left");
+
+
 void setup(){
-  size(int(BuildPlatformWidth*DisplayScale),int(BuildPlatformHeight*DisplayScale));
+  size(AppWidth,AppHeight);
 
   Slice = new ArrayList();
+  
+  FileWriteThread = new Thread(FileWrite);
+  FileWriteThread.start();
+  
   print("Loading STL...\n");
   //Load the .stl
   //Later we should totally make this runtime...
@@ -65,55 +92,6 @@ void setup(){
   print("Y: " + CleanFloat(STLFile.by1) + " - " + CleanFloat(STLFile.by2) + "   ");
   print("Z: " + CleanFloat(STLFile.bz1) + " - " + CleanFloat(STLFile.bz2) + "   \n");
   //Spit GCODE!
-  Line2D Intersection;
-  Line2D lin;
-  output = createWriter("output.gcode");
-
-  //Header:
-  output.println("G21");
-  output.println("G90");
-  output.println("M103");
-  output.println("M105");
-  output.println("M104 s220.0");
-  output.println("M109 s110.0");
-  output.println("M101");
-
-  Slice ThisSlice;
-  float Layers = STLFile.bz2/LayerThickness;
-  for(float ZLevel = 0;ZLevel<(STLFile.bz2-LayerThickness);ZLevel=ZLevel+LayerThickness)
-  {
-    ThisSlice = new Slice(STLFile,ZLevel);
-    print("Slicing: ");
-    TextStatusBar(ZLevel/STLFile.bz2,50);
-    print("\n");
-    lin = (Line2D) ThisSlice.Lines.get(0);
-    output.println("G1 X" + lin.x1 + " Y" + lin.y1 + " Z" + ZLevel + " F" + PrintHeadSpeed);
-      for(int j = 0;j<ThisSlice.Lines.size();j++)
-      {
-        lin = (Line2D) ThisSlice.Lines.get(j);
-        output.println("G1 X" + lin.x2 + " Y" + lin.y2 + " Z" + ZLevel + " F" + PrintHeadSpeed);
-      }
-  }
-  output.flush();
-  output.close();
-
-
-  print("Finished Slicing!  Bounding Box is:\n");
-  print("X: " + CleanFloat(STLFile.bx1) + " - " + CleanFloat(STLFile.bx2) + "   ");
-  print("Y: " + CleanFloat(STLFile.by1) + " - " + CleanFloat(STLFile.by2) + "   ");
-  print("Z: " + CleanFloat(STLFile.bz1) + " - " + CleanFloat(STLFile.bz2) + "   ");
-  if(STLFile.bz1<0)print("\n(Values below z=0 not exported.)");
-
-  //THEN scale to fit the screen
-//  if((STLFile.bx2-STLFile.bx1)>(STLFile.by2-STLFile.by1))
-//  {
-//    STLFile.Scale(width/(STLFile.bx2-STLFile.bx1));
-//  }
-//  else
-//  {
-//    STLFile.Scale(height/(STLFile.by2-STLFile.by1));
-//  }
-
   //Match viewport scale to 1cm per gridline
   STLFile.Scale(DisplayScale);
   STLFile.Translate(BuildPlatformWidth*DisplayScale/2,BuildPlatformHeight*DisplayScale/2,-STLFile.bz1);
@@ -125,45 +103,65 @@ void setup(){
 void draw()
 {
   background(0);
-  //noStroke();
- 
-  //background(0);
   stroke(0);
   strokeWeight(2);
 
-  //Generate a Slice
-  Line2D Intersection;
-  Slice = new ArrayList();
-  for(int i = STLFile.Triangles.size()-1;i>=0;i--)
+  
+  //Interface Page
+  if(GUIPage==0)
   {
-    
-    Triangle tri = (Triangle) STLFile.Triangles.get(i);
-    Intersection = tri.GetZIntersect(MeshHeight*mouseX/width);
-    if(Intersection!=null)Slice.add(Intersection);
-    //if(Intersection!=null)print(Intersection.x1 + " \n");
+    FileWriteProgress.update(FileWriteFraction);
+    FileWriteButton.display();
+    FileWriteProgress.display();
   }
 
 
-  //Draw the grid
-  stroke(80);
-  strokeWeight(1);
-  for(float px = 0; px<(BuildPlatformWidth*DisplayScale+1);px=px+GridSpacing*DisplayScale)line(px,0,px,BuildPlatformHeight*DisplayScale);
-  for(float py = 0; py<(BuildPlatformHeight*DisplayScale+1);py=py+GridSpacing*DisplayScale)line(0,py,BuildPlatformWidth*DisplayScale,py);
+  //SliceView Page
+  if(GUIPage==1)
+  {
+    Line2D Intersection;
+    Slice = new ArrayList();
+    for(int i = STLFile.Triangles.size()-1;i>=0;i--)
+    {
+    
+      Triangle tri = (Triangle) STLFile.Triangles.get(i);
+      Intersection = tri.GetZIntersect(MeshHeight*mouseX/width);
+      if(Intersection!=null)Slice.add(Intersection);
+      //if(Intersection!=null)print(Intersection.x1 + " \n");
+    }
+
+
+    //Draw the grid
+    stroke(80);
+    strokeWeight(1);
+    for(float px = 0; px<(BuildPlatformWidth*DisplayScale+1);px=px+GridSpacing*DisplayScale)line(px,0,px,BuildPlatformHeight*DisplayScale);
+    for(float py = 0; py<(BuildPlatformHeight*DisplayScale+1);py=py+GridSpacing*DisplayScale)line(0,py,BuildPlatformWidth*DisplayScale,py);
   
 
-  //Draw the profile
-  stroke(255);
-  strokeWeight(2);
-  for(int i = Slice.size()-1;i>=0;i--)
-  {
-    Line2D lin = (Line2D) Slice.get(i);
-    //lin.Scale(15);
-    line(lin.x1,lin.y1,lin.x2,lin.y2);
+    //Draw the profile
+    stroke(255);
+    strokeWeight(2);
+    for(int i = Slice.size()-1;i>=0;i--)
+    {
+      Line2D lin = (Line2D) Slice.get(i);
+      //lin.Scale(15);
+      line(lin.x1,lin.y1,lin.x2,lin.y2);
+    }
   }
-  //Note, the profile contains everything you need
-  //to do a full Skeinview-style display; we need
-  //extrude colors and especially arrows!
+  //Always On Top, so last in order
+  LeftButton.display();
+  RightButton.display();
 
+}
+
+//Save file on click
+void mousePressed()
+{
+  if((FileWriteButton.over(mouseX,mouseY))&GUIPage==0)FileWriteTrigger=true;
+  if(LeftButton.over(mouseX,mouseY))GUIPage--;
+  if(RightButton.over(mouseX,mouseY))GUIPage++;
+  if(GUIPage==2)GUIPage=0;
+  if(GUIPage==-1)GUIPage=1;
 }
 
 
@@ -206,5 +204,78 @@ void TextStatusBar(float Percent, int Width)
   for(int i = 0; i<Stars; i++)print("X");
   for(int i = 0; i<Dashes; i++)print(".");
   print("]");
+}
+
+
+class FileWriteProc implements Runnable{
+  public void run(){
+    while(true){
+      while(!FileWriteTrigger);
+      FileWriteTrigger=false;//Only do this once per command.
+        Line2D Intersection;
+  Line2D lin;
+  output = createWriter("output.gcode");
+
+
+  //Scale and locate the mesh
+  STLFile.Scale(1/DisplayScale);
+  //Put the mesh in the middle of the platform:
+  STLFile.Translate(-STLFile.bx1,-STLFile.by1,-STLFile.bz1);
+  STLFile.Translate(-STLFile.bx2/2,-STLFile.by2/2,0);
+  STLFile.Translate(0,0,-LayerThickness);  
+  STLFile.Translate(0,0,-Sink);
+
+
+  //Header:
+  output.println("G21");
+  output.println("G90");
+  output.println("M103");
+  output.println("M105");
+  output.println("M104 s220.0");
+  output.println("M109 s110.0");
+  output.println("M101");
+
+  Slice ThisSlice;
+  float Layers = STLFile.bz2/LayerThickness;
+  for(float ZLevel = 0;ZLevel<(STLFile.bz2-LayerThickness);ZLevel=ZLevel+LayerThickness)
+  {
+    FileWriteFraction = (ZLevel/(STLFile.bz2-LayerThickness));
+    ThisSlice = new Slice(STLFile,ZLevel);
+    lin = (Line2D) ThisSlice.Lines.get(0);
+    output.println("G1 X" + lin.x1 + " Y" + lin.y1 + " Z" + ZLevel + " F" + PrintHeadSpeed);
+      for(int j = 0;j<ThisSlice.Lines.size();j++)
+      {
+        lin = (Line2D) ThisSlice.Lines.get(j);
+        output.println("G1 X" + lin.x2 + " Y" + lin.y2 + " Z" + ZLevel + " F" + PrintHeadSpeed);
+      }
+  }
+  output.flush();
+  output.close();
+
+  FileWriteFraction=1.5;
+  print("Finished Slicing!  Bounding Box is:\n");
+  print("X: " + CleanFloat(STLFile.bx1) + " - " + CleanFloat(STLFile.bx2) + "   ");
+  print("Y: " + CleanFloat(STLFile.by1) + " - " + CleanFloat(STLFile.by2) + "   ");
+  print("Z: " + CleanFloat(STLFile.bz1) + " - " + CleanFloat(STLFile.bz2) + "   ");
+  if(STLFile.bz1<0)print("\n(Values below z=0 not exported.)");
+
+  //THEN scale to fit the screen
+//  if((STLFile.bx2-STLFile.bx1)>(STLFile.by2-STLFile.by1))
+//  {
+//    STLFile.Scale(width/(STLFile.bx2-STLFile.bx1));
+//  }
+//  else
+//  {
+//    STLFile.Scale(height/(STLFile.by2-STLFile.by1));
+//  }
+  STLFile.Scale(DisplayScale);
+  STLFile.Translate(BuildPlatformWidth*DisplayScale/2,BuildPlatformHeight*DisplayScale/2,-STLFile.bz1);
+  //STLFile.Translate(-STLFile.bx1,-STLFile.by1,-STLFile.bz1);
+  MeshHeight=STLFile.bz2-STLFile.bz1;
+
+  
+
+    }
+  }
 }
 

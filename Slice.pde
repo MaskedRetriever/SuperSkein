@@ -35,47 +35,70 @@ class Slice {
     UnsortedLines.remove(0);
 
     //ratchets for distance
-    //dflipped exists to catch flipped lines
-    float d,min_d,dflipped,min_dflipped;
-    min_d = 10000;
-    min_dflipped = 10000;
+    //dist_flipped exists to catch flipped lines
+    float dist, dist_flipped;
+    float mindist = 10000;
 
     int iNextLine;
+
+    float epsilon = 1e-6;
     
     //while(Lines.size()<FinalSize)
-    while(UnsortedLines.size()>8)
+    while(UnsortedLines.size()>0)
     {
       Line2D CLine = (Line2D) Lines.get(Lines.size()-1);//Get last
       iNextLine = (Lines.size()-1);
-      min_d = 10000;
-      min_dflipped = 10000;
+      mindist = 10000;
+      boolean doflip = false;
       for(int i = UnsortedLines.size()-1;i>=0;i--)
       {
         Line2D LineCandidate = (Line2D) UnsortedLines.get(i);
-        d = pow((LineCandidate.x1-CLine.x2),2) + pow((LineCandidate.y1-CLine.y2),2);
-        dflipped = pow((LineCandidate.x1-CLine.x1),2) + pow((LineCandidate.y1-CLine.y1),2);
+        dist         = mag(LineCandidate.x1-CLine.x2, LineCandidate.y1-CLine.y2);
+        dist_flipped = mag(LineCandidate.x2-CLine.x2, LineCandidate.y2-CLine.y2); // flipped
           
-        if(d<min_d)
+	if(dist<epsilon)
+	{
+	  // We found exact match.  Break out early.
+	  doflip = false;
+	  iNextLine = i;
+          mindist = 0;
+	  break;
+	}
+
+	if(dist_flipped<epsilon)
+	{
+	  // We found exact flipped match.  Break out early.
+	  doflip = true;
+	  iNextLine = i;
+          mindist = 0;
+	  break;
+	}
+
+        if(dist<mindist)
         {
+	  // remember closest nonexact matches to end
+	  doflip = false;
           iNextLine=i;
-          min_d = d;
+          mindist = dist;
         }
-        if(dflipped<min_dflipped)
+
+        if(dist_flipped<mindist)
         {
+	  // remember closest flipped nonexact matches to end
+	  doflip = true;
           iNextLine=i;
-          min_dflipped = dflipped;
+          mindist = dist_flipped;
         }
- 
       }
 
       Line2D LineToMove = (Line2D) UnsortedLines.get(iNextLine);
-      //if(min_dflipped>min_d)LineToMove.Flip();
+      if(doflip) {
+        LineToMove.Flip();
+      }
       Lines.add(LineToMove);
       UnsortedLines.remove(iNextLine);
     }
   }
   
-
-
-
 } 
+
