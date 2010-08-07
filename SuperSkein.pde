@@ -8,20 +8,25 @@
 //a GUI menu at some point...
 //Sorted here according to units
 
+
+//Dimensionless
+float PreScale = 1;
+//String FileName = "dense800ktris.stl";
+String FileName = "sculpt_dragon.stl";
+
+//Radians
+float XRotate = 0;
+
+
+
+//Non-GUI-Reachable:
+
 //"funny" dimensionality
 float PrintHeadSpeed = 2000.0;
 
 //Measured in millimeters
 float LayerThickness = 0.3;
 float Sink = 2;
-
-//Dimensionless
-float PreScale = 0.6;
-//String FileName = "dense800ktris.stl";
-String FileName = "sculpt_dragon.stl";
-
-//Radians
-float XRotate = 0;
 
 //Display Properties
 float BuildPlatformWidth = 100;
@@ -30,13 +35,10 @@ float GridSpacing = 10;
 float DisplayScale = 5;
 
 
-
 //End of "easy" modifications you can make...
 //Naturally I encourage everyone to learn and
 //alter the code that follows!
-int t=0;
-float tfloat=0;
-float[] Tri = new float[9];
+
 ArrayList Slice;
 Mesh STLFile;
 PrintWriter output;
@@ -64,10 +66,13 @@ int AppHeight = int(BuildPlatformHeight*DisplayScale);
 int GUIPage = 0;
 
 //Page 0 GUI Widgets
-GUIButton STLLoadButton = new GUIButton(10,25,100,15, "Load STL");
-GUIProgressBar STLLoadProgress = new GUIProgressBar(120,25,370,15);
-GUIButton FileWriteButton = new GUIButton(10,50,100,15, "Write File");
-GUIProgressBar FileWriteProgress = new GUIProgressBar(120,50,370,15);
+GUIButton STLLoadButton = new GUIButton(10,125,100,15, "Load STL");
+GUIProgressBar STLLoadProgress = new GUIProgressBar(120,125,370,15);
+GUIButton FileWriteButton = new GUIButton(10,150,100,15, "Write GCode");
+GUIProgressBar FileWriteProgress = new GUIProgressBar(120,150,370,15);
+GUITextBox STLName = new GUITextBox(120,25,370,15,"sculpt_dragon.stl");
+GUITextBox STLScale = new GUITextBox(120,50,100,15, "1.0");
+GUITextBox STLXRotate = new GUITextBox(390,50,100,15, "0.0");
 
 //AllPage GUI Widgets
 GUIButton RightButton = new GUIButton(AppWidth-90,AppHeight-20,80,15, "Right");
@@ -105,7 +110,16 @@ void draw()
     textFont(font);
     fill(255);
     text("GCODE Write",width/2,15);
-
+    
+    textAlign(LEFT);
+    text("STL File Name",10,37);
+    STLName.display();
+    text("Scale Factor",10,62);
+    STLScale.display();
+    
+    text("X-Rotation",300,62);
+    STLXRotate.display();
+    
     FileWriteProgress.update(FileWriteFraction);
     FileWriteButton.display();
     FileWriteProgress.display();
@@ -152,9 +166,10 @@ void draw()
       {
         Line2D lin = (Line2D) Slice.get(i);
         Line2D newLine = new Line2D(lin.x1,lin.y1,lin.x2,lin.y2);
-        //lin.Scale(15);
-        newLine.Scale(-DisplayScale);
-        newLine.Translate(BuildPlatformWidth*DisplayScale/2,BuildPlatformHeight*DisplayScale/2);
+        //Translate into Display Coordinates
+        newLine.Scale(DisplayScale);
+        newLine.Rotate(PI);
+        newLine.Translate(BuildPlatformWidth*DisplayScale/2,BuildPlatformHeight*DisplayScale/2);        
         line(newLine.x1,newLine.y1,newLine.x2,newLine.y2);
       }
     }
@@ -173,10 +188,21 @@ void mousePressed()
 {
   if((FileWriteButton.over(mouseX,mouseY))&GUIPage==0)FileWriteTrigger=true;
   if((STLLoadButton.over(mouseX,mouseY))&GUIPage==0)STLLoadTrigger=true;
+  if(GUIPage==0)STLName.checkFocus(mouseX,mouseY);
+  if(GUIPage==0)STLScale.checkFocus(mouseX,mouseY);
+  if(GUIPage==0)STLXRotate.checkFocus(mouseX,mouseY);
+
   if(LeftButton.over(mouseX,mouseY))GUIPage--;
   if(RightButton.over(mouseX,mouseY))GUIPage++;
   if(GUIPage==2)GUIPage=0;
   if(GUIPage==-1)GUIPage=1;
+}
+
+void keyTyped()
+{
+  if(GUIPage==0)STLName.doKeystroke(key);
+  if(GUIPage==0)STLScale.doKeystroke(key);
+  if(GUIPage==0)STLXRotate.doKeystroke(key);
 }
 
 
@@ -216,12 +242,13 @@ class STLLoadProc implements Runnable{
     {
       while(!STLLoadTrigger);
       STLLoadTrigger = false;
+      STLLoadFraction = 0.0;
       STLLoadProgress.message("STL Load May Take a Minute or more...");
-      STLFile = new Mesh(FileName);
+      STLFile = new Mesh(STLName.Text);
 
       //Scale and locate the mesh
-      STLFile.Scale(PreScale);
-      STLFile.RotateX(XRotate);
+      STLFile.Scale(STLScale.getFloat());
+      STLFile.RotateX(STLXRotate.getFloat()*180/PI);
       //Put the mesh in the middle of the platform:
       STLFile.Translate(-STLFile.bx1,-STLFile.by1,-STLFile.bz1);
       STLFile.Translate(-STLFile.bx2/2,-STLFile.by2/2,0);
