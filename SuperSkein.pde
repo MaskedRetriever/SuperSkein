@@ -17,8 +17,8 @@ float Sink = 2;
 
 //Dimensionless
 float PreScale = 0.6;
-//String FileName = "dense800ktris.stl";
-String FileName = "sculpt_dragon.stl";
+String FileName = "dense800ktris.stl";
+//String FileName = "sculpt_dragon.stl";
 
 //Radians
 float XRotate = 0;
@@ -44,12 +44,17 @@ float MeshHeight;
 
 
 //Thread Objects
-//Runnable FileLoad = new FileLoadProc();
+Runnable STLLoad = new STLLoadProc();
 Runnable FileWrite = new FileWriteProc();
-Thread FileWriteThread, FileLoadThread;
+Thread FileWriteThread, STLLoadThread;
 boolean FileWriteTrigger = false;
-boolean FileLoadTrigger = false;
+boolean STLLoadTrigger = false;
 float FileWriteFraction = 0;
+float STLLoadFraction = 0;
+
+//Flags
+boolean STLLoadedFlag = false;
+boolean FileWrittenFlag = false;
 
 
 int AppWidth = int(BuildPlatformWidth*DisplayScale);
@@ -59,8 +64,10 @@ int AppHeight = int(BuildPlatformHeight*DisplayScale);
 int GUIPage = 0;
 
 //Page 0 GUI Widgets
-GUIButton FileWriteButton = new GUIButton(10,20,100,15, "Write File");
-GUIProgressBar FileWriteProgress = new GUIProgressBar(140,20,300,15);
+GUIButton STLLoadButton = new GUIButton(10,25,100,15, "Load STL");
+GUIProgressBar STLLoadProgress = new GUIProgressBar(120,25,370,15);
+GUIButton FileWriteButton = new GUIButton(10,50,100,15, "Write File");
+GUIProgressBar FileWriteProgress = new GUIProgressBar(120,50,370,15);
 
 //AllPage GUI Widgets
 GUIButton RightButton = new GUIButton(AppWidth-90,AppHeight-20,80,15, "Right");
@@ -74,34 +81,8 @@ void setup(){
   
   FileWriteThread = new Thread(FileWrite);
   FileWriteThread.start();
-  
-  print("Loading STL...\n");
-  //Load the .stl
-  //Later we should totally make this runtime...
-  STLFile = new Mesh(FileName);
-
-
-  //Scale and locate the mesh
-  STLFile.Scale(PreScale);
-  STLFile.RotateX(XRotate);
-  //Put the mesh in the middle of the platform:
-  STLFile.Translate(-STLFile.bx1,-STLFile.by1,-STLFile.bz1);
-  STLFile.Translate(-STLFile.bx2/2,-STLFile.by2/2,0);
-  STLFile.Translate(0,0,-LayerThickness);  
-  STLFile.Translate(0,0,-Sink);
-
-
-  print("File Loaded, Slicing:\n");
-  print("X: " + CleanFloat(STLFile.bx1) + " - " + CleanFloat(STLFile.bx2) + "   ");
-  print("Y: " + CleanFloat(STLFile.by1) + " - " + CleanFloat(STLFile.by2) + "   ");
-  print("Z: " + CleanFloat(STLFile.bz1) + " - " + CleanFloat(STLFile.bz2) + "   \n");
-  //Spit GCODE!
-  //Match viewport scale to 1cm per gridline
-  //STLFile.Scale(DisplayScale);
-  //STLFile.Translate(BuildPlatformWidth*DisplayScale/2,BuildPlatformHeight*DisplayScale/2,-STLFile.bz1);
-  //STLFile.Translate(-STLFile.bx1,-STLFile.by1,-STLFile.bz1);
-
-  MeshHeight=STLFile.bz2-STLFile.bz1;
+  STLLoadThread = new Thread(STLLoad);
+  STLLoadThread.start();
 
 }
 
@@ -110,15 +91,28 @@ void draw()
   background(0);
   stroke(0);
   strokeWeight(2);
-
+  PFont font;
+  font = loadFont("ArialMT-12.vlw");
   
+
+  //GUI Pages
+
   //Interface Page
   if(GUIPage==0)
   {
+    textAlign(CENTER);
+    textFont(font);
+    fill(255);
+    text("GCODE Write",width/2,15);
+
     FileWriteProgress.update(FileWriteFraction);
     FileWriteButton.display();
     FileWriteProgress.display();
+    STLLoadProgress.update(STLLoadFraction);
+    STLLoadButton.display();
+    STLLoadProgress.display();
   }
+
 
 
   //MeshMRI
@@ -126,18 +120,13 @@ void draw()
   //it shows you 2D sections of the mesh.
   if(GUIPage==1)
   {
+    textAlign(CENTER);
+    textFont(font);
+    fill(255);
+    text("MeshMRI",width/2,15);
+
     Line2D Intersection;
     Slice = new ArrayList();
-    
-    
-    for(int i = STLFile.Triangles.size()-1;i>=0;i--)
-    {
-    
-      Triangle tri = (Triangle) STLFile.Triangles.get(i);
-      Intersection = tri.GetZIntersect(MeshHeight*mouseX/width);
-      if(Intersection!=null)Slice.add(Intersection);
-      //if(Intersection!=null)print(Intersection.x1 + " \n");
-    }
 
 
     //Draw the grid
@@ -145,19 +134,32 @@ void draw()
     strokeWeight(1);
     for(float px = 0; px<(BuildPlatformWidth*DisplayScale+1);px=px+GridSpacing*DisplayScale)line(px,0,px,BuildPlatformHeight*DisplayScale);
     for(float py = 0; py<(BuildPlatformHeight*DisplayScale+1);py=py+GridSpacing*DisplayScale)line(0,py,BuildPlatformWidth*DisplayScale,py);
-  
-
-    //Draw the profile
-    stroke(255);
-    strokeWeight(2);
-    for(int i = Slice.size()-1;i>=0;i--)
+    
+    if(STLLoadedFlag)
     {
-      Line2D lin = (Line2D) Slice.get(i);
-      Line2D newLine = new Line2D(lin.x1,lin.y1,lin.x2,lin.y2);
-      //lin.Scale(15);
-      newLine.Scale(-DisplayScale);
-      newLine.Translate(BuildPlatformWidth*DisplayScale/2,BuildPlatformHeight*DisplayScale/2);
-      line(newLine.x1,newLine.y1,newLine.x2,newLine.y2);
+      for(int i = STLFile.Triangles.size()-1;i>=0;i--)
+      {
+        Triangle tri = (Triangle) STLFile.Triangles.get(i);
+        Intersection = tri.GetZIntersect(MeshHeight*mouseX/width);
+        if(Intersection!=null)Slice.add(Intersection);
+      }
+ 
+      //Draw the profile
+      stroke(255);
+      strokeWeight(2);
+      for(int i = Slice.size()-1;i>=0;i--)
+      {
+        Line2D lin = (Line2D) Slice.get(i);
+        Line2D newLine = new Line2D(lin.x1,lin.y1,lin.x2,lin.y2);
+        //lin.Scale(15);
+        newLine.Scale(-DisplayScale);
+        newLine.Translate(BuildPlatformWidth*DisplayScale/2,BuildPlatformHeight*DisplayScale/2);
+        line(newLine.x1,newLine.y1,newLine.x2,newLine.y2);
+      }
+    }
+    else
+    {
+      text("STL File Not Loaded",width/2,height/2);
     }
   }
   //Always On Top, so last in order
@@ -169,6 +171,7 @@ void draw()
 void mousePressed()
 {
   if((FileWriteButton.over(mouseX,mouseY))&GUIPage==0)FileWriteTrigger=true;
+  if((STLLoadButton.over(mouseX,mouseY))&GUIPage==0)STLLoadTrigger=true;
   if(LeftButton.over(mouseX,mouseY))GUIPage--;
   if(RightButton.over(mouseX,mouseY))GUIPage++;
   if(GUIPage==2)GUIPage=0;
@@ -205,17 +208,31 @@ float CleanFloat(float Value)
 }
 
 
+class STLLoadProc implements Runnable{
+  public void run()
+  {
+    while(true)
+    {
+      while(!STLLoadTrigger);
+      STLLoadTrigger = false;
+      STLLoadFraction = 0.1;
+      STLFile = new Mesh(FileName);
 
-//Print a status bar
-void TextStatusBar(float Percent, int Width)
-{
-  print("[");
-  int Stars = int(Percent*Width)+1;
-  int Dashes = Width-Stars;
-  for(int i = 0; i<Stars; i++)print("X");
-  for(int i = 0; i<Dashes; i++)print(".");
-  print("]");
+      //Scale and locate the mesh
+      STLFile.Scale(PreScale);
+      STLFile.RotateX(XRotate);
+      //Put the mesh in the middle of the platform:
+      STLFile.Translate(-STLFile.bx1,-STLFile.by1,-STLFile.bz1);
+      STLFile.Translate(-STLFile.bx2/2,-STLFile.by2/2,0);
+      STLFile.Translate(0,0,-LayerThickness);  
+      STLFile.Translate(0,0,-Sink);
+      MeshHeight=STLFile.bz2-STLFile.bz1;
+      STLLoadFraction = 1.1;
+      STLLoadedFlag = true;
+    }
+  }
 }
+
 
 
 class FileWriteProc implements Runnable{
@@ -223,69 +240,45 @@ class FileWriteProc implements Runnable{
     while(true){
       while(!FileWriteTrigger);
       FileWriteTrigger=false;//Only do this once per command.
-        Line2D Intersection;
-  Line2D lin;
-  output = createWriter("output.gcode");
+      Line2D Intersection;
+      Line2D lin;
+      output = createWriter("output.gcode");
 
+      //Header:
+      output.println("G21");
+      output.println("G90");
+      output.println("M103");
+      output.println("M105");
+      output.println("M104 s220.0");
+      output.println("M109 s110.0");
+      output.println("M101");
 
-  //Scale and locate the mesh
-  //STLFile.Scale(1/DisplayScale);
-  //Put the mesh in the middle of the platform:
-//  STLFile.Translate(-STLFile.bx1,-STLFile.by1,-STLFile.bz1);
-//  STLFile.Translate(-STLFile.bx2/2,-STLFile.by2/2,0);
-//  STLFile.Translate(0,0,-LayerThickness);  
-//  STLFile.Translate(0,0,-Sink);
-
-
-  //Header:
-  output.println("G21");
-  output.println("G90");
-  output.println("M103");
-  output.println("M105");
-  output.println("M104 s220.0");
-  output.println("M109 s110.0");
-  output.println("M101");
-
-  Slice ThisSlice;
-  float Layers = STLFile.bz2/LayerThickness;
-  for(float ZLevel = 0;ZLevel<(STLFile.bz2-LayerThickness);ZLevel=ZLevel+LayerThickness)
-  {
-    FileWriteFraction = (ZLevel/(STLFile.bz2-LayerThickness));
-    ThisSlice = new Slice(STLFile,ZLevel);
-    lin = (Line2D) ThisSlice.Lines.get(0);
-    output.println("G1 X" + lin.x1 + " Y" + lin.y1 + " Z" + ZLevel + " F" + PrintHeadSpeed);
-      for(int j = 0;j<ThisSlice.Lines.size();j++)
+      Slice ThisSlice;
+      float Layers = STLFile.bz2/LayerThickness;
+      for(float ZLevel = 0;ZLevel<(STLFile.bz2-LayerThickness);ZLevel=ZLevel+LayerThickness)
       {
-        lin = (Line2D) ThisSlice.Lines.get(j);
-        output.println("G1 X" + lin.x2 + " Y" + lin.y2 + " Z" + ZLevel + " F" + PrintHeadSpeed);
+        FileWriteFraction = (ZLevel/(STLFile.bz2-LayerThickness));
+        ThisSlice = new Slice(STLFile,ZLevel);
+        lin = (Line2D) ThisSlice.Lines.get(0);
+        output.println("G1 X" + lin.x1 + " Y" + lin.y1 + " Z" + ZLevel + " F" + PrintHeadSpeed);
+        for(int j = 0;j<ThisSlice.Lines.size();j++)
+        {
+          lin = (Line2D) ThisSlice.Lines.get(j);
+          output.println("G1 X" + lin.x2 + " Y" + lin.y2 + " Z" + ZLevel + " F" + PrintHeadSpeed);
+        }
       }
-  }
-  output.flush();
-  output.close();
+      output.flush();
+      output.close();
 
-  FileWriteFraction=1.5;
-  print("Finished Slicing!  Bounding Box is:\n");
-  print("X: " + CleanFloat(STLFile.bx1) + " - " + CleanFloat(STLFile.bx2) + "   ");
-  print("Y: " + CleanFloat(STLFile.by1) + " - " + CleanFloat(STLFile.by2) + "   ");
-  print("Z: " + CleanFloat(STLFile.bz1) + " - " + CleanFloat(STLFile.bz2) + "   ");
-  if(STLFile.bz1<0)print("\n(Values below z=0 not exported.)");
+      FileWriteFraction=1.5;
+      print("Finished Slicing!  Bounding Box is:\n");
+      print("X: " + CleanFloat(STLFile.bx1) + " - " + CleanFloat(STLFile.bx2) + "   ");
+      print("Y: " + CleanFloat(STLFile.by1) + " - " + CleanFloat(STLFile.by2) + "   ");
+      print("Z: " + CleanFloat(STLFile.bz1) + " - " + CleanFloat(STLFile.bz2) + "   ");
+      if(STLFile.bz1<0)print("\n(Values below z=0 not exported.)");
 
-  //THEN scale to fit the screen
-//  if((STLFile.bx2-STLFile.bx1)>(STLFile.by2-STLFile.by1))
-//  {
-//    STLFile.Scale(width/(STLFile.bx2-STLFile.bx1));
-//  }
-//  else
-//  {
-//    STLFile.Scale(height/(STLFile.by2-STLFile.by1));
-//  }
-//  STLFile.Scale(DisplayScale);
-//  STLFile.Translate(BuildPlatformWidth*DisplayScale/2,BuildPlatformHeight*DisplayScale/2,-STLFile.bz1);
-  //STLFile.Translate(-STLFile.bx1,-STLFile.by1,-STLFile.bz1);
-  MeshHeight=STLFile.bz2-STLFile.bz1;
-
-  
-
+      MeshHeight=STLFile.bz2-STLFile.bz1;
+      STLLoadedFlag = true;
     }
   }
 }
