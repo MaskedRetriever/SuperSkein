@@ -56,6 +56,13 @@ class Line2D {
     y2 = yn;
   }
 
+  void Translate(float tX, float tY)
+  {
+    x1 = x1 + tX;
+    x2 = x2 + tX;
+    y1 = y1 + tY;
+    y2 = y2 + tY;
+  }
   
   float Length()
   {

@@ -19,14 +19,17 @@ float Sink = 2;
 float PreScale = 0.6;
 //String FileName = "dense800ktris.stl";
 String FileName = "sculpt_dragon.stl";
-//String FileName = "triess_forprint.stl";
 
+//Radians
+float XRotate = 0;
 
 //Display Properties
 float BuildPlatformWidth = 100;
 float BuildPlatformHeight = 100;
 float GridSpacing = 10;
 float DisplayScale = 5;
+
+
 
 //End of "easy" modifications you can make...
 //Naturally I encourage everyone to learn and
@@ -80,6 +83,7 @@ void setup(){
 
   //Scale and locate the mesh
   STLFile.Scale(PreScale);
+  STLFile.RotateX(XRotate);
   //Put the mesh in the middle of the platform:
   STLFile.Translate(-STLFile.bx1,-STLFile.by1,-STLFile.bz1);
   STLFile.Translate(-STLFile.bx2/2,-STLFile.by2/2,0);
@@ -93,9 +97,10 @@ void setup(){
   print("Z: " + CleanFloat(STLFile.bz1) + " - " + CleanFloat(STLFile.bz2) + "   \n");
   //Spit GCODE!
   //Match viewport scale to 1cm per gridline
-  STLFile.Scale(DisplayScale);
-  STLFile.Translate(BuildPlatformWidth*DisplayScale/2,BuildPlatformHeight*DisplayScale/2,-STLFile.bz1);
+  //STLFile.Scale(DisplayScale);
+  //STLFile.Translate(BuildPlatformWidth*DisplayScale/2,BuildPlatformHeight*DisplayScale/2,-STLFile.bz1);
   //STLFile.Translate(-STLFile.bx1,-STLFile.by1,-STLFile.bz1);
+
   MeshHeight=STLFile.bz2-STLFile.bz1;
 
 }
@@ -116,11 +121,15 @@ void draw()
   }
 
 
-  //SliceView Page
+  //MeshMRI
+  //Only relates to the final gcode in that
+  //it shows you 2D sections of the mesh.
   if(GUIPage==1)
   {
     Line2D Intersection;
     Slice = new ArrayList();
+    
+    
     for(int i = STLFile.Triangles.size()-1;i>=0;i--)
     {
     
@@ -144,14 +153,16 @@ void draw()
     for(int i = Slice.size()-1;i>=0;i--)
     {
       Line2D lin = (Line2D) Slice.get(i);
+      Line2D newLine = new Line2D(lin.x1,lin.y1,lin.x2,lin.y2);
       //lin.Scale(15);
-      line(lin.x1,lin.y1,lin.x2,lin.y2);
+      newLine.Scale(-DisplayScale);
+      newLine.Translate(BuildPlatformWidth*DisplayScale/2,BuildPlatformHeight*DisplayScale/2);
+      line(newLine.x1,newLine.y1,newLine.x2,newLine.y2);
     }
   }
   //Always On Top, so last in order
   LeftButton.display();
   RightButton.display();
-
 }
 
 //Save file on click
@@ -218,12 +229,12 @@ class FileWriteProc implements Runnable{
 
 
   //Scale and locate the mesh
-  STLFile.Scale(1/DisplayScale);
+  //STLFile.Scale(1/DisplayScale);
   //Put the mesh in the middle of the platform:
-  STLFile.Translate(-STLFile.bx1,-STLFile.by1,-STLFile.bz1);
-  STLFile.Translate(-STLFile.bx2/2,-STLFile.by2/2,0);
-  STLFile.Translate(0,0,-LayerThickness);  
-  STLFile.Translate(0,0,-Sink);
+//  STLFile.Translate(-STLFile.bx1,-STLFile.by1,-STLFile.bz1);
+//  STLFile.Translate(-STLFile.bx2/2,-STLFile.by2/2,0);
+//  STLFile.Translate(0,0,-LayerThickness);  
+//  STLFile.Translate(0,0,-Sink);
 
 
   //Header:
@@ -268,8 +279,8 @@ class FileWriteProc implements Runnable{
 //  {
 //    STLFile.Scale(height/(STLFile.by2-STLFile.by1));
 //  }
-  STLFile.Scale(DisplayScale);
-  STLFile.Translate(BuildPlatformWidth*DisplayScale/2,BuildPlatformHeight*DisplayScale/2,-STLFile.bz1);
+//  STLFile.Scale(DisplayScale);
+//  STLFile.Translate(BuildPlatformWidth*DisplayScale/2,BuildPlatformHeight*DisplayScale/2,-STLFile.bz1);
   //STLFile.Translate(-STLFile.bx1,-STLFile.by1,-STLFile.bz1);
   MeshHeight=STLFile.bz2-STLFile.bz1;
 

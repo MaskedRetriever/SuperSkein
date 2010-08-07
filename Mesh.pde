@@ -50,6 +50,17 @@ class Mesh {
     CalculateBoundingBox();
   }
 
+
+  void RotateX(float Angle)
+  {
+    for(int i = Triangles.size()-1;i>=0;i--)
+    {
+      Triangle tri = (Triangle) Triangles.get(i);
+      tri.RotateX(Angle);
+    }
+    CalculateBoundingBox();
+  } 
+
   void CalculateBoundingBox()
   {
       bx1 = 10000;
