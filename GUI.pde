@@ -47,6 +47,7 @@ class GUIProgressBar {
   
   float Value;
   int x,y,w,h;
+  String Mesg;
   
   GUIProgressBar(int ix, int iy, int iw, int ih){
     Value = 0;
@@ -54,6 +55,7 @@ class GUIProgressBar {
     y=iy;
     w=iw;
     h=ih;
+    Mesg = "";
   }
 
   void update(float nValue)
@@ -73,7 +75,7 @@ class GUIProgressBar {
       fill(0,0,200);
       rect(x,y,w*Value,h);
       fill(255);
-      if(Value>0.01)text("Working...",x+w/2,(y+h/2)+6);
+      //if(Value>0.01)text("Working...",x+w/2,(y+h/2)+6);
     }
     else
     {
@@ -81,12 +83,19 @@ class GUIProgressBar {
       rect(x,y,w,h);
 
       fill(255);
-      text("Done!",x+w/2,(y+h/2)+6);
+      Mesg="Done!";
+      //text("Done!",x+w/2,(y+h/2)+6);
     }
     stroke(255);
     strokeWeight(1);
     noFill();
     rect(x,y,w,h);
+    text(Mesg,x+w/2,(y+h/2)+6);
+  }
+  
+  void message(String input)
+  {
+    Mesg=input;
   }
 }
 

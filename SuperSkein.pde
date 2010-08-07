@@ -17,8 +17,8 @@ float Sink = 2;
 
 //Dimensionless
 float PreScale = 0.6;
-String FileName = "dense800ktris.stl";
-//String FileName = "sculpt_dragon.stl";
+//String FileName = "dense800ktris.stl";
+String FileName = "sculpt_dragon.stl";
 
 //Radians
 float XRotate = 0;
@@ -75,7 +75,8 @@ GUIButton LeftButton = new GUIButton(10,AppHeight-20,80,15, "Left");
 
 
 void setup(){
-  size(AppWidth,AppHeight);
+  size(AppWidth,AppHeight,JAVA2D);
+  
 
   Slice = new ArrayList();
   
@@ -215,7 +216,7 @@ class STLLoadProc implements Runnable{
     {
       while(!STLLoadTrigger);
       STLLoadTrigger = false;
-      STLLoadFraction = 0.1;
+      STLLoadProgress.message("STL Load May Take a Minute or more...");
       STLFile = new Mesh(FileName);
 
       //Scale and locate the mesh
