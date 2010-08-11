@@ -20,8 +20,40 @@ class Line2D {
     HeadSpeed = 1000; //By default it at least does move.
     Flowrate = 0; //By default the plastic does not flow.
   }
+
+
+  Line2D(PVector pt1, PVector pt2) {
+    x1 = pt1.x;
+    y1 = pt1.y;
+    x2 = pt2.x;
+    y2 = pt2.y;
+    HeadSpeed = 1000; //By default it at least does move.
+    Flowrate = 0; //By default the plastic does not flow.
+  }
   
   
+  void setPoint1(PVector pt) {
+    x1 = pt.x;
+    y1 = pt.y;
+  }
+
+
+  void setPoint2(PVector pt) {
+    x2 = pt.x;
+    y2 = pt.y;
+  }
+
+
+  PVector getPoint1() {
+    return new PVector(x1,y1);
+  }
+
+
+  PVector getPoint2() {
+    return new PVector(x2,y2);
+  }
+
+
   void Scale(float Factor)
   {
     x1=x1*Factor;
@@ -118,7 +150,7 @@ class Line2D {
   }
 
 
-  float MinSegmentDistanceFromXY(float x, float y)
+  float MinimumSegmentDistanceFromXY(float x, float y)
   {
     PVector pt = ClosestSegmentPointToXY(x, y);
     return mag(pt.y-y, pt.x-x);
@@ -126,7 +158,7 @@ class Line2D {
 
 
   // Returns the distance from the given XY point to the closest
-  float MinExtendedLineDistanceFromXY(float x, float y)
+  float MinimumExtendedLineDistanceFromXY(float x, float y)
   {
     PVector pt = ClosestExtendedLinePointToXY(x, y);
     return mag(pt.y-y, pt.x-x);
