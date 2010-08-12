@@ -166,4 +166,89 @@ class GUITextBox{
   
 }
 
+class GUIFloatBox{
+  String Text;
+  int x,y,w,h;
+  boolean Focus;
+  boolean Valid;
+  
+  GUIFloatBox(int ix, int iy, int iw, int ih, String iText) {
+    Focus = false;
+    x=ix;
+    y=iy;
+    w=iw;
+    h=ih;
+    Text = iText;
+    Valid = true;
+  }
+
+  boolean hasFloat()
+  {
+    int DecNum=0;
+    int Start=0;
+    if(Text.length()<1)return false;
+    
+    if(Text.charAt(0)=='-')Start=1;//allow negative numbers
+    for(int i=Start;i<Text.length();i++)
+    {
+      int charval=Text.charAt(i);
+      if(charval==46)
+      {
+        DecNum++;
+      }
+      else
+      {
+        if(charval<48)return false;
+        if(charval>57)return false;
+      }
+    }
+    if(DecNum<2)return true;
+    else return false;
+  }
+  
+  boolean over(int ix,int iy)
+  {
+    if((ix>x)&(ix<(x+w)&(iy>y)&(iy<(y+h))))return true;
+    else return false;
+  }
+  
+  void display()
+  {
+    PFont font = loadFont("ArialMT-12.vlw");
+    textAlign(LEFT);
+    textFont(font);
+    fill(0);
+    stroke(200);
+    strokeWeight(1);
+    if(Focus)stroke(255);
+    if(!Valid)stroke(200,100,100);
+    if(!Valid&Focus)stroke(255,100,100);
+    rect(x,y,w,h);
+    fill(255);
+    text(Text,x+2,y+12);
+  }
+
+  void doKeystroke(int KeyStroke)
+  {
+    if(Focus){
+      if((KeyStroke==8)&(Text.length()>0))Text=Text.substring(0,Text.length()-1);
+      if((KeyStroke>31)&(KeyStroke<177))Text = Text + char(KeyStroke);
+    }
+    Valid = this.hasFloat();
+  }
+  
+  void checkFocus(int X, int Y)
+  {
+    if(this.over(X,Y))Focus=true;
+    else Focus=false;
+  }
+  
+  float getFloat()
+  {
+    return Float.parseFloat(Text);
+  }
+}
+
+
+
 

@@ -71,8 +71,8 @@ GUIProgressBar STLLoadProgress = new GUIProgressBar(120,125,370,15);
 GUIButton FileWriteButton = new GUIButton(10,150,100,15, "Write GCode");
 GUIProgressBar FileWriteProgress = new GUIProgressBar(120,150,370,15);
 GUITextBox STLName = new GUITextBox(120,25,370,15,"sculpt_dragon.stl");
-GUITextBox STLScale = new GUITextBox(120,50,100,15, "1.0");
-GUITextBox STLXRotate = new GUITextBox(390,50,100,15, "0.0");
+GUIFloatBox STLScale = new GUIFloatBox(120,50,100,15, "1.0");
+GUIFloatBox STLXRotate = new GUIFloatBox(390,50,100,15, "0.0");
 
 //AllPage GUI Widgets
 GUIButton RightButton = new GUIButton(AppWidth-90,AppHeight-20,80,15, "Right");
