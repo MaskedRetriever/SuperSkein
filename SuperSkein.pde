@@ -4,29 +4,24 @@
 //Note!  Only takes binary-coded STL.  ASCII
 //STL just breaks it for now.
 
-//Slicing Parameters-- someone should make
-//a GUI menu at some point...
-//Sorted here according to units
 
+//The config file takes precedence over these parameters!
 
-//Dimensionless
 float PreScale = 1;
-//String FileName = "dense800ktris.stl";
 String FileName = "sculpt_dragon.stl";
-
-//Radians
 float XRotate = 0;
 
 
 
-//Non-GUI-Reachable:
-
-//"funny" dimensionality
+//Non-GUI-Reachable but in ~config.txt
 float PrintHeadSpeed = 2000.0;
-
-//Measured in millimeters
 float LayerThickness = 0.3;
-float Sink = 2;
+float Sink = 2.0;
+int OperatingTemp = 220;
+int FlowRate = 180;
+
+
+
 
 //Display Properties
 float BuildPlatformWidth = 100;
@@ -43,6 +38,11 @@ ArrayList Slice;
 Mesh STLFile;
 PrintWriter output;
 float MeshHeight;
+
+//Configuration File Object
+//Hijacks the above variables
+//We'll ditch 'em once this works.
+Configuration MyConfig = new Configuration();
 
 
 //Thread Objects
@@ -90,6 +90,35 @@ void setup(){
   STLLoadThread = new Thread(STLLoad);
   STLLoadThread.start();
 
+  //For initialization
+  //~config.txt
+  MyConfig.Load();
+  STLScale.setFloat(MyConfig.PreScale);
+  STLName.Text = MyConfig.FileName;
+  STLXRotate.setFloat(MyConfig.XRotate);
+  FlowRate = MyConfig.FlowRate;
+  OperatingTemp = MyConfig.OperatingTemp;
+  PrintHeadSpeed = MyConfig.PrintHeadSpeed;
+  LayerThickness = MyConfig.LayerThickness;
+  Sink = MyConfig.Sink;
+
+}
+
+//This executes on Exit
+//Autosave for ~config.txt
+void stop()
+{
+  if(STLScale.Valid)MyConfig.PreScale=STLScale.getFloat();
+  if(STLXRotate.Valid)MyConfig.XRotate=STLXRotate.getFloat();
+  MyConfig.FileName=STLName.Text;
+  MyConfig.FlowRate=FlowRate;
+  MyConfig.OperatingTemp=OperatingTemp;  
+  MyConfig.PrintHeadSpeed=PrintHeadSpeed;
+  MyConfig.LayerThickness=LayerThickness;
+  Sink = MyConfig.Sink;
+  
+  MyConfig.Save();
+  super.stop();
 }
 
 void draw()
@@ -203,6 +232,8 @@ void keyTyped()
   if(GUIPage==0)STLName.doKeystroke(key);
   if(GUIPage==0)STLScale.doKeystroke(key);
   if(GUIPage==0)STLXRotate.doKeystroke(key);
+  
+ 
 }
 
 
@@ -277,8 +308,8 @@ class FileWriteProc implements Runnable{
       output.println("G90");
       output.println("M103");
       output.println("M105");
-      output.println("M104 s220.0");
-      output.println("M109 s110.0");
+      output.println("M104 s"+OperatingTemp+".0");
+      output.println("M109 s"+FlowRate+".0");
       output.println("M101");
 
       Slice ThisSlice;

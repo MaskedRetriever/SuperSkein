@@ -247,6 +247,16 @@ class GUIFloatBox{
   {
     return Float.parseFloat(Text);
   }
+  
+  void setFloat(float in)
+  {
+    if(in<0)in=-in;
+    if(in<10)Text=nf(in,1,2);
+    if((in<100)&(in>10))Text=nf(in,2,2);
+    if((in<1000)&(in>100))Text=nf(in,3,2);
+    if((in<10000)&(in>1000))Text=nf(in,4,2);
+    if(in>10000)Text=nf(in,5,2);
+  }
 }
 
 
