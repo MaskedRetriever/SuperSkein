@@ -3,7 +3,7 @@
 //SuperSkein is an open source mesh slicer.
 //Note!  Only takes binary-coded STL.  ASCII
 //STL just breaks it for now.
-
+import processing.dxf.*;
 
 //The config file takes precedence over these parameters!
 
@@ -11,7 +11,7 @@ float PreScale = 1;
 String FileName = "sculpt_dragon.stl";
 float XRotate = 0;
 
-
+String DXFSliceFilePrefix = "dxf_slice";
 
 //Non-GUI-Reachable but in ~config.txt
 float PrintHeadSpeed = 2000.0;
@@ -48,9 +48,12 @@ Configuration MyConfig = new Configuration();
 //Thread Objects
 Runnable STLLoad = new STLLoadProc();
 Runnable FileWrite = new FileWriteProc();
-Thread FileWriteThread, STLLoadThread;
+Runnable DXFWrite = new DXFWriteProc();
+Thread DXFWriteThread, FileWriteThread, STLLoadThread;
+boolean DXFWriteTrigger = false;
 boolean FileWriteTrigger = false;
 boolean STLLoadTrigger = false;
+float DXFWriteFraction = 0;
 float FileWriteFraction = 0;
 float STLLoadFraction = 0;
 
@@ -70,6 +73,8 @@ GUIButton STLLoadButton = new GUIButton(10,125,100,15, "Load STL");
 GUIProgressBar STLLoadProgress = new GUIProgressBar(120,125,370,15);
 GUIButton FileWriteButton = new GUIButton(10,150,100,15, "Write GCode");
 GUIProgressBar FileWriteProgress = new GUIProgressBar(120,150,370,15);
+GUIButton DXFWriteButton = new GUIButton(10,175,100,15, "Write DXF Slices");
+GUIProgressBar DXFWriteProgress = new GUIProgressBar(120,175,370,15);
 GUITextBox STLName = new GUITextBox(120,25,370,15,"sculpt_dragon.stl");
 GUIFloatBox STLScale = new GUIFloatBox(120,50,100,15, "1.0");
 GUIFloatBox STLXRotate = new GUIFloatBox(390,50,100,15, "0.0");
@@ -80,11 +85,13 @@ GUIButton LeftButton = new GUIButton(10,AppHeight-20,80,15, "Left");
 
 
 void setup(){
-  size(AppWidth,AppHeight,JAVA2D);
+  size(AppWidth,AppHeight,P3D);
   
 
   Slice = new ArrayList();
   
+  DXFWriteThread = new Thread(DXFWrite);
+  DXFWriteThread.start();
   FileWriteThread = new Thread(FileWrite);
   FileWriteThread.start();
   STLLoadThread = new Thread(STLLoad);
@@ -148,13 +155,18 @@ void draw()
     
     text("X-Rotation",300,62);
     STLXRotate.display();
+
     
+    DXFWriteProgress.update(DXFWriteFraction);
+    DXFWriteButton.display();
+    DXFWriteProgress.display();
     FileWriteProgress.update(FileWriteFraction);
     FileWriteButton.display();
     FileWriteProgress.display();
     STLLoadProgress.update(STLLoadFraction);
     STLLoadButton.display();
     STLLoadProgress.display();
+
   }
 
 
@@ -207,14 +219,17 @@ void draw()
       text("STL File Not Loaded",width/2,height/2);
     }
   }
-  //Always On Top, so last in order
-  LeftButton.display();
-  RightButton.display();
+  if( GUIPage != 2) {
+    //Always On Top, so last in order
+    LeftButton.display();
+    RightButton.display();
+  }
 }
 
 //Save file on click
 void mousePressed()
 {
+  if((DXFWriteButton.over(mouseX,mouseY))&GUIPage==0)DXFWriteTrigger=true;
   if((FileWriteButton.over(mouseX,mouseY))&GUIPage==0)FileWriteTrigger=true;
   if((STLLoadButton.over(mouseX,mouseY))&GUIPage==0)STLLoadTrigger=true;
   if(GUIPage==0)STLName.checkFocus(mouseX,mouseY);
@@ -293,7 +308,6 @@ class STLLoadProc implements Runnable{
 }
 
 
-
 class FileWriteProc implements Runnable{
   public void run(){
     while(true){
@@ -330,6 +344,58 @@ class FileWriteProc implements Runnable{
       output.close();
 
       FileWriteFraction=1.5;
+      print("Finished Slicing!  Bounding Box is:\n");
+      print("X: " + CleanFloat(STLFile.bx1) + " - " + CleanFloat(STLFile.bx2) + "   ");
+      print("Y: " + CleanFloat(STLFile.by1) + " - " + CleanFloat(STLFile.by2) + "   ");
+      print("Z: " + CleanFloat(STLFile.bz1) + " - " + CleanFloat(STLFile.bz2) + "   ");
+      if(STLFile.bz1<0)print("\n(Values below z=0 not exported.)");
+
+      MeshHeight=STLFile.bz2-STLFile.bz1;
+      STLLoadedFlag = true;
+    }
+  }
+}
+
+
+class DXFWriteProc implements Runnable{
+  public void run(){
+    while(true){
+      while(!DXFWriteTrigger);
+      DXFWriteTrigger=false;//Only do this once per command.
+      GUIPage=2;
+      Line2D Intersection;
+      Line2D lin;
+      String DXFSliceFilePrefix = FileName;
+      String DXFSliceFileName;
+      int DXFSliceNum;
+
+      Slice ThisSlice;
+      float Layers = STLFile.bz2/LayerThickness;
+      for(float ZLevel = 0;ZLevel<(STLFile.bz2-LayerThickness);ZLevel=ZLevel+LayerThickness)
+      {
+        background(153);
+        DXFSliceNum = round(ZLevel / LayerThickness);
+        DXFSliceFileName = DXFSliceFilePrefix + "_" + LayerThickness + "_" + DXFSliceNum + ".dxf";
+        DXFWriteFraction = (ZLevel/(STLFile.bz2-LayerThickness));
+        print("DXF Slice File Name: " + DXFSliceFileName + "\n");
+        beginRaw(DXF, DXFSliceFileName);
+        ThisSlice = new Slice(STLFile,ZLevel);
+        pushMatrix();
+        translate(width/2,height/2);
+        beginShape();
+        lin = (Line2D) ThisSlice.Lines.get(0);
+        for(int j = 0;j<ThisSlice.Lines.size();j++)
+        {
+          lin = (Line2D) ThisSlice.Lines.get(j);
+          line(lin.x1, lin.y1, LayerThickness*DXFSliceNum, lin.x2, lin.y2, LayerThickness*DXFSliceNum);
+        }
+        endShape(CLOSE);
+        popMatrix();
+        endRaw();
+      }
+
+      GUIPage=0;
+      DXFWriteFraction=1.5;
       print("Finished Slicing!  Bounding Box is:\n");
       print("X: " + CleanFloat(STLFile.bx1) + " - " + CleanFloat(STLFile.bx2) + "   ");
       print("Y: " + CleanFloat(STLFile.by1) + " - " + CleanFloat(STLFile.by2) + "   ");
