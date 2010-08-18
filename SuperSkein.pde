@@ -13,6 +13,9 @@ float XRotate = 0;
 
 String DXFSliceFilePrefix = "dxf_slice";
 
+// Set DXFExportMode=1 to switch render and enable dependent code.
+int DXFExportMode = 0;
+
 //Non-GUI-Reachable but in ~config.txt
 float PrintHeadSpeed = 2000.0;
 float LayerThickness = 0.3;
@@ -49,7 +52,8 @@ Configuration MyConfig = new Configuration();
 Runnable STLLoad = new STLLoadProc();
 Runnable FileWrite = new FileWriteProc();
 Runnable DXFWrite = new DXFWriteProc();
-Thread DXFWriteThread, FileWriteThread, STLLoadThread;
+Thread DXFWriteThread;
+Thread FileWriteThread, STLLoadThread;
 boolean DXFWriteTrigger = false;
 boolean FileWriteTrigger = false;
 boolean STLLoadTrigger = false;
@@ -85,13 +89,13 @@ GUIButton LeftButton = new GUIButton(10,AppHeight-20,80,15, "Left");
 
 
 void setup(){
-  size(AppWidth,AppHeight,P3D);
-  
+  if(DXFExportMode != 0) size(AppWidth,AppHeight,P3D);
+  if(DXFExportMode == 0) size(AppWidth,AppHeight,JAVA2D);
 
   Slice = new ArrayList();
   
-  DXFWriteThread = new Thread(DXFWrite);
-  DXFWriteThread.start();
+  if(DXFExportMode != 0) DXFWriteThread = new Thread(DXFWrite);
+  if(DXFExportMode != 0) DXFWriteThread.start();
   FileWriteThread = new Thread(FileWrite);
   FileWriteThread.start();
   STLLoadThread = new Thread(STLLoad);
@@ -157,9 +161,9 @@ void draw()
     STLXRotate.display();
 
     
-    DXFWriteProgress.update(DXFWriteFraction);
-    DXFWriteButton.display();
-    DXFWriteProgress.display();
+    if(DXFExportMode != 0) DXFWriteProgress.update(DXFWriteFraction);
+    if(DXFExportMode != 0) DXFWriteButton.display();
+    if(DXFExportMode != 0) DXFWriteProgress.display();
     FileWriteProgress.update(FileWriteFraction);
     FileWriteButton.display();
     FileWriteProgress.display();
@@ -229,7 +233,7 @@ void draw()
 //Save file on click
 void mousePressed()
 {
-  if((DXFWriteButton.over(mouseX,mouseY))&GUIPage==0)DXFWriteTrigger=true;
+  if(DXFExportMode != 0) if((DXFWriteButton.over(mouseX,mouseY))&GUIPage==0)DXFWriteTrigger=true;
   if((FileWriteButton.over(mouseX,mouseY))&GUIPage==0)FileWriteTrigger=true;
   if((STLLoadButton.over(mouseX,mouseY))&GUIPage==0)STLLoadTrigger=true;
   if(GUIPage==0)STLName.checkFocus(mouseX,mouseY);
