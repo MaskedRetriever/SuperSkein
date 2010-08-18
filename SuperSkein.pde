@@ -365,10 +365,18 @@ class DXFWriteProc implements Runnable{
       GUIPage=2;
       Line2D Intersection;
       Line2D lin;
+      
       String DXFSliceFilePrefix = FileName;
       String DXFSliceFileName;
       int DXFSliceNum;
-
+      
+      String OpenSCADFileName = DXFSliceFilePrefix + "_" + LayerThickness + ".scad";
+      
+      output = createWriter(OpenSCADFileName);
+      output.println("// OpenSCAD Wrapper for sliced "+FileName+" DXF.\n");
+      output.println("layerThickness="+LayerThickness+";\n");
+      output.println("layerHeight="+LayerThickness+"/2;\n");
+      
       Slice ThisSlice;
       float Layers = STLFile.bz2/LayerThickness;
       for(float ZLevel = 0;ZLevel<(STLFile.bz2-LayerThickness);ZLevel=ZLevel+LayerThickness)
@@ -392,8 +400,13 @@ class DXFWriteProc implements Runnable{
         endShape(CLOSE);
         popMatrix();
         endRaw();
+        output.println("translate([0,0,layerThickness*"+DXFSliceNum+"]) linear_extrude(file=\""
+          + DXFSliceFileName + "\", height=layerHeight, convexity = 10);\n" );
       }
 
+      output.flush();
+      output.close();
+      
       GUIPage=0;
       DXFWriteFraction=1.5;
       print("Finished Slicing!  Bounding Box is:\n");
