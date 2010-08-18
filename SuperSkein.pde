@@ -374,11 +374,15 @@ class DXFWriteProc implements Runnable{
       
       output = createWriter(OpenSCADFileName);
       output.println("// OpenSCAD Wrapper for sliced "+FileName+" DXF.\n");
-      output.println("layerThickness="+LayerThickness+";\n");
-      output.println("layerHeight="+LayerThickness+"/2;\n");
+      output.println("layerThickness="+LayerThickness+";");
+      output.println("layerHeight="+LayerThickness+"/2;");
+      output.println("minX=" + CleanFloat(STLFile.bx1) + ";\nmaxX=" + CleanFloat(STLFile.bx2) + ";");
+      output.println("minY=" + CleanFloat(STLFile.by1) + ";\nmaxY=" + CleanFloat(STLFile.by2) + ";");
+      output.println("minZ=" + CleanFloat(STLFile.bz1) + ";\nminZ=" + CleanFloat(STLFile.bz2) + ";\n");
       
       Slice ThisSlice;
       float Layers = STLFile.bz2/LayerThickness;
+      int renderWidth=width, renderHeight=height;
       for(float ZLevel = 0;ZLevel<(STLFile.bz2-LayerThickness);ZLevel=ZLevel+LayerThickness)
       {
         background(153);
@@ -389,15 +393,15 @@ class DXFWriteProc implements Runnable{
         beginRaw(DXF, DXFSliceFileName);
         ThisSlice = new Slice(STLFile,ZLevel);
         pushMatrix();
-        translate(width/2,height/2);
-        beginShape();
+        translate(renderWidth/2,renderHeight/2);
+        // beginShape();
         lin = (Line2D) ThisSlice.Lines.get(0);
         for(int j = 0;j<ThisSlice.Lines.size();j++)
         {
           lin = (Line2D) ThisSlice.Lines.get(j);
           line(lin.x1, lin.y1, LayerThickness*DXFSliceNum, lin.x2, lin.y2, LayerThickness*DXFSliceNum);
         }
-        endShape(CLOSE);
+        // endShape(CLOSE);
         popMatrix();
         endRaw();
         output.println("translate([0,0,layerThickness*"+DXFSliceNum+"]) linear_extrude(file=\""
