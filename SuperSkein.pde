@@ -322,7 +322,12 @@ class FileWriteProc implements Runnable{
       FileWriteTrigger=false;//Only do this once per command.
       Line2D Intersection;
       Line2D lin;
-      output = createWriter(STLName.Text+".gcode");
+      String GCodeFileName = selectOutput("Save G-Code to This File");
+      if(GCodeFileName == null) {
+        println("No file was selected; using STL File as G-Code file prefix.");
+        GCodeFileName=STLName.Text+".gcode";
+      }
+      output = createWriter(GCodeFileName);
 
       //Header:
       output.println("G21");
@@ -351,7 +356,7 @@ class FileWriteProc implements Runnable{
       output.close();
 
       FileWriteFraction=1.5;
-      print("Finished Slicing!  Bounding Box is:\n");
+      print("\nFinished Slicing!  Bounding Box is:\n");
       print("X: " + CleanFloat(STLFile.bx1) + " - " + CleanFloat(STLFile.bx2) + "   ");
       print("Y: " + CleanFloat(STLFile.by1) + " - " + CleanFloat(STLFile.by2) + "   ");
       print("Z: " + CleanFloat(STLFile.bz1) + " - " + CleanFloat(STLFile.bz2) + "   ");
@@ -373,23 +378,29 @@ class DXFWriteProc implements Runnable{
       Line2D Intersection;
       Line2D lin;
       
-      String DXFSliceFilePrefix = STLName.Text;
+      String DXFSliceFilePrefix = selectOutput("Save Results to This File Path and Prefix");
+      if(DXFSliceFilePrefix == null) {
+        println("No file was selected; using STL File location as path+prefix.");
+        DXFSliceFilePrefix=STLName.Text;
+      }
       String DXFSliceFileName;
       int DXFSliceNum;
       
       String OpenSCADFileName = DXFSliceFilePrefix + "_" + LayerThickness + ".scad";
       
       output = createWriter(OpenSCADFileName);
-      output.println("// OpenSCAD Wrapper for sliced "+FileName+" DXF.\n");
+      output.println("// OpenSCAD Wrapper for sliced "+STLName.Text+" DXF.\n");
       output.println("layerThickness="+LayerThickness+";");
       output.println("layerHeight="+LayerThickness+"/2;");
       output.println("minX=" + CleanFloat(STLFile.bx1) + ";\nmaxX=" + CleanFloat(STLFile.bx2) + ";");
       output.println("minY=" + CleanFloat(STLFile.by1) + ";\nmaxY=" + CleanFloat(STLFile.by2) + ";");
       output.println("minZ=" + CleanFloat(STLFile.bz1) + ";\nminZ=" + CleanFloat(STLFile.bz2) + ";\n");
+      output.println("module stl_slice(index=0) {");
       
       Slice ThisSlice;
       float Layers = STLFile.bz2/LayerThickness;
       int renderWidth=width, renderHeight=height;
+      int sliceCount=0;
       for(float ZLevel = 0;ZLevel<(STLFile.bz2-LayerThickness);ZLevel=ZLevel+LayerThickness)
       {
         background(153);
@@ -411,9 +422,20 @@ class DXFWriteProc implements Runnable{
         endShape(CLOSE);
         popMatrix();
         endRaw();
-        output.println("translate([0,0,layerThickness*"+DXFSliceNum+"]) linear_extrude(file=\""
+        output.println(" if(index>="+sliceCount+"&&index<(1+"+sliceCount+")) {");
+        output.println("  echo(\"  Extruding slice "+DXFSliceNum+".\");");
+        output.println("  translate([0,0,layerThickness*"+DXFSliceNum+"]) linear_extrude(file=\""
           + DXFSliceFileName + "\", height=layerHeight, convexity = 10);\n" );
+        output.println(" }");
+        sliceCount++;
       }
+      output.println(" if(index>="+sliceCount+") {");
+      output.println("  echo(\"ERROR: Out of index bounds.\");");
+      output.println(" }");
+      output.println("}");
+      output.println("function get_stl_slice_count() = "+sliceCount+";");
+      output.println("render_slice=(get_stl_slice_count()-1)*$t; // Use OpenSCAD Animation to step thru slices.");
+      output.println("stl_slice(index=render_slice);");
 
       output.flush();
       output.close();
@@ -425,6 +447,8 @@ class DXFWriteProc implements Runnable{
       print("Y: " + CleanFloat(STLFile.by1) + " - " + CleanFloat(STLFile.by2) + "   ");
       print("Z: " + CleanFloat(STLFile.bz1) + " - " + CleanFloat(STLFile.bz2) + "   ");
       if(STLFile.bz1<0)print("\n(Values below z=0 not exported.)");
+
+      open(OpenSCADFileName);
 
       MeshHeight=STLFile.bz2-STLFile.bz1;
       STLLoadedFlag = true;
