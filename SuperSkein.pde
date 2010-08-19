@@ -241,6 +241,7 @@ void mousePressed()
   if(GUIPage==0)STLName.checkFocus(mouseX,mouseY);
   if(GUIPage==0)STLScale.checkFocus(mouseX,mouseY);
   if(GUIPage==0)STLXRotate.checkFocus(mouseX,mouseY);
+  if(GUIPage==0 && STLName.Focus) STLName.Text=selectInput();
 
   if(LeftButton.over(mouseX,mouseY))GUIPage--;
   if(RightButton.over(mouseX,mouseY))GUIPage++;
@@ -321,7 +322,7 @@ class FileWriteProc implements Runnable{
       FileWriteTrigger=false;//Only do this once per command.
       Line2D Intersection;
       Line2D lin;
-      output = createWriter(FileName+".gcode");
+      output = createWriter(STLName.Text+".gcode");
 
       //Header:
       output.println("G21");
@@ -372,7 +373,7 @@ class DXFWriteProc implements Runnable{
       Line2D Intersection;
       Line2D lin;
       
-      String DXFSliceFilePrefix = FileName;
+      String DXFSliceFilePrefix = STLName.Text;
       String DXFSliceFileName;
       int DXFSliceNum;
       
