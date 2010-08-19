@@ -38,6 +38,7 @@ class GUIButton {
     fill(255);
     textAlign(CENTER);
     textFont(font);
+    textMode(SCREEN);
     text(title,x+w/2,(y+h/2)+6);
   }
   
@@ -77,6 +78,7 @@ class GUIProgressBar {
     font = loadFont("ArialMT-12.vlw");
     textAlign(CENTER);
     textFont(font);
+    textMode(SCREEN);
 
     if(Value<1)
     {
@@ -136,6 +138,7 @@ class GUITextBox{
     PFont font = loadFont("ArialMT-12.vlw");
     textAlign(LEFT);
     textFont(font);
+    textMode(SCREEN);
     fill(0);
     stroke(200);
     strokeWeight(1);
@@ -217,6 +220,7 @@ class GUIFloatBox{
     PFont font = loadFont("ArialMT-12.vlw");
     textAlign(LEFT);
     textFont(font);
+    textMode(SCREEN);
     fill(0);
     stroke(200);
     strokeWeight(1);

@@ -14,7 +14,7 @@ float XRotate = 0;
 String DXFSliceFilePrefix = "dxf_slice";
 
 // Set DXFExportMode=1 to switch render and enable dependent code.
-int DXFExportMode = 0;
+int DXFExportMode = 1;
 
 //Non-GUI-Reachable but in ~config.txt
 float PrintHeadSpeed = 2000.0;
@@ -148,6 +148,7 @@ void draw()
   {
     textAlign(CENTER);
     textFont(font);
+    textMode(SCREEN);
     fill(255);
     text("GCODE Write",width/2,15);
     
@@ -182,6 +183,7 @@ void draw()
   {
     textAlign(CENTER);
     textFont(font);
+    textMode(SCREEN);
     fill(255);
     text("MeshMRI",width/2,15);
 
@@ -242,7 +244,7 @@ void mousePressed()
 
   if(LeftButton.over(mouseX,mouseY))GUIPage--;
   if(RightButton.over(mouseX,mouseY))GUIPage++;
-  if(GUIPage==2)GUIPage=0;
+  if(GUIPage==3)GUIPage=0;
   if(GUIPage==-1)GUIPage=1;
 }
 
@@ -319,7 +321,7 @@ class FileWriteProc implements Runnable{
       FileWriteTrigger=false;//Only do this once per command.
       Line2D Intersection;
       Line2D lin;
-      output = createWriter("output.gcode");
+      output = createWriter(FileName+".gcode");
 
       //Header:
       output.println("G21");
@@ -397,15 +399,13 @@ class DXFWriteProc implements Runnable{
         beginRaw(DXF, DXFSliceFileName);
         ThisSlice = new Slice(STLFile,ZLevel);
         pushMatrix();
-        translate(renderWidth/2,renderHeight/2);
-        // beginShape();
         lin = (Line2D) ThisSlice.Lines.get(0);
         for(int j = 0;j<ThisSlice.Lines.size();j++)
         {
           lin = (Line2D) ThisSlice.Lines.get(j);
-          line(lin.x1, lin.y1, LayerThickness*DXFSliceNum, lin.x2, lin.y2, LayerThickness*DXFSliceNum);
+          line(lin.x1+renderWidth/2, lin.y1+renderHeight/2, LayerThickness*DXFSliceNum, 
+            lin.x2+renderWidth/2, lin.y2+renderHeight/2, LayerThickness*DXFSliceNum);
         }
-        // endShape(CLOSE);
         popMatrix();
         endRaw();
         output.println("translate([0,0,layerThickness*"+DXFSliceNum+"]) linear_extrude(file=\""
