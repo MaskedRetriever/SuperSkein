@@ -399,6 +399,7 @@ class DXFWriteProc implements Runnable{
         beginRaw(DXF, DXFSliceFileName);
         ThisSlice = new Slice(STLFile,ZLevel);
         pushMatrix();
+        beginShape();
         lin = (Line2D) ThisSlice.Lines.get(0);
         for(int j = 0;j<ThisSlice.Lines.size();j++)
         {
@@ -406,6 +407,7 @@ class DXFWriteProc implements Runnable{
           line(lin.x1+renderWidth/2, lin.y1+renderHeight/2, LayerThickness*DXFSliceNum, 
             lin.x2+renderWidth/2, lin.y2+renderHeight/2, LayerThickness*DXFSliceNum);
         }
+        endShape(CLOSE);
         popMatrix();
         endRaw();
         output.println("translate([0,0,layerThickness*"+DXFSliceNum+"]) linear_extrude(file=\""
