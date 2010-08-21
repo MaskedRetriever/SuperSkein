@@ -43,7 +43,7 @@ ArrayList Slice;
 Mesh STLFile;
 PrintWriter output;
 float MeshHeight;
-PGraphics pgDxf;
+RawDXF pgDxf;
 
 //Configuration File Object
 //Hijacks the above variables
@@ -94,7 +94,7 @@ GUIButton LeftButton = new GUIButton(10,AppHeight-20,80,15, "Left");
 void setup(){
 //  if(DXFExportMode != 0) size(AppWidth,AppHeight,P3D);
 //  if(DXFExportMode == 0) size(AppWidth,AppHeight,JAVA2D);
-  size(AppWidth,AppHeight,JAVA2D);
+  size(AppWidth,AppHeight,P2D);
 
   Slice = new ArrayList();
   
@@ -407,14 +407,15 @@ class DXFWriteProc implements Runnable{
       float Layers = STLFile.bz2/LayerThickness;
       int renderWidth=width, renderHeight=height;
       int sliceCount=0;
+      DXFSliceFileName = DXFSliceFilePrefix + "_" + LayerThickness + ".dxf";
+      print("DXF Slice File Name: " + DXFSliceFileName + "\n");
+      pgDxf=(RawDXF) createGraphics(round(BuildPlatformWidth),round(BuildPlatformHeight),DXF,DXFSliceFileName);
+      beginRaw(pgDxf);
       for(float ZLevel = 0;ZLevel<(STLFile.bz2-LayerThickness);ZLevel=ZLevel+LayerThickness)
       {
         DXFSliceNum = round(ZLevel / LayerThickness);
-        DXFSliceFileName = DXFSliceFilePrefix + "_" + LayerThickness + "_" + DXFSliceNum + ".dxf";
+        pgDxf.setLayer(DXFSliceNum);
         DXFWriteFraction = (ZLevel/(STLFile.bz2-LayerThickness));
-        print("DXF Slice File Name: " + DXFSliceFileName + "\n");
-	pgDxf=createGraphics(round(BuildPlatformWidth),round(BuildPlatformHeight),DXF,DXFSliceFileName);
-	pgDxf.beginDraw();
         ThisSlice = new Slice(STLFile,ZLevel);
         lin = (Line2D) ThisSlice.Lines.get(0);
         for(int j = 0;j<ThisSlice.Lines.size();j++)
@@ -422,14 +423,13 @@ class DXFWriteProc implements Runnable{
           lin = (Line2D) ThisSlice.Lines.get(j);
           pgDxf.line(lin.x1, lin.y1, lin.x2, lin.y2);
         }
-	pgDxf.endDraw();
-	pgDxf.dispose();
-        output.println(" if(index>="+sliceCount+"&&index<(1+"+sliceCount+")) {");
+        output.println(" if(index>="+DXFSliceNum+"&&index<(1+"+DXFSliceNum+")) {");
         output.println("  echo(\"  Instantiating slice "+DXFSliceNum+".\");");
-        output.println("  import_dxf(file=\"" + DXFSliceFileName + "\");\n" );
+        output.println("  import_dxf(file=\"" + DXFSliceFileName + "\", layer=\""+DXFSliceNum+"\");\n" );
         output.println(" }");
         sliceCount++;
       }
+      endRaw();
       output.println(" if(index>="+sliceCount+") {");
       output.println("  echo(\"ERROR: Out of index bounds.\");");
       output.println(" }");
