@@ -15,6 +15,8 @@ String DXFSliceFilePrefix = "dxf_slice";
 
 // Set DXFExportMode=1 to switch render and enable dependent code.
 int DXFExportMode = 1;
+// Set OpenSCADTestMode=1 to enable OpenSCAD test code.
+int OpenSCADTestMode=0;
 
 //Non-GUI-Reachable but in ~config.txt
 float PrintHeadSpeed = 2000.0;
@@ -455,7 +457,21 @@ class DXFWriteProc implements Runnable{
       print("Z: " + CleanFloat(STLFile.bz1) + " - " + CleanFloat(STLFile.bz2) + "   ");
       if(STLFile.bz1<0)print("\n(Values below z=0 not exported.)");
 
-      // open(OpenSCADFileName);
+      if(OpenSCADTestMode==1) {
+        OpenSCAD runOSCAD = new OpenSCAD();
+        runOSCAD.setInput(OpenSCADFileName);
+        runOSCAD.setOutput(DXF,OpenSCADFileName+".dxf");
+        print("Running OpenSCAD Process:\n");
+        print("   Exec Path: "+runOSCAD.getExecPath()+"\n");
+        print("   Exec Args: "+runOSCAD.getExecArgs()+"\n");
+        print("  Input File: "+runOSCAD.getInput()+"\n");
+        if(runOSCAD.run()) {
+          print("Run Finished!\n");
+        } else {
+          print("Run Error.\n");
+        }
+        // open(OpenSCADFileName);
+      }
 
       MeshHeight=STLFile.bz2-STLFile.bz1;
       STLLoadedFlag = true;
