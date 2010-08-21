@@ -41,6 +41,7 @@ ArrayList Slice;
 Mesh STLFile;
 PrintWriter output;
 float MeshHeight;
+PGraphics pgDxf;
 
 //Configuration File Object
 //Hijacks the above variables
@@ -89,8 +90,9 @@ GUIButton LeftButton = new GUIButton(10,AppHeight-20,80,15, "Left");
 
 
 void setup(){
-  if(DXFExportMode != 0) size(AppWidth,AppHeight,P3D);
-  if(DXFExportMode == 0) size(AppWidth,AppHeight,JAVA2D);
+//  if(DXFExportMode != 0) size(AppWidth,AppHeight,P3D);
+//  if(DXFExportMode == 0) size(AppWidth,AppHeight,JAVA2D);
+  size(AppWidth,AppHeight,JAVA2D);
 
   Slice = new ArrayList();
   
@@ -374,7 +376,7 @@ class DXFWriteProc implements Runnable{
     while(true){
       while(!DXFWriteTrigger);
       DXFWriteTrigger=false;//Only do this once per command.
-      GUIPage=2;
+      // GUIPage=2;
       Line2D Intersection;
       Line2D lin;
       
@@ -395,7 +397,9 @@ class DXFWriteProc implements Runnable{
       output.println("minX=" + CleanFloat(STLFile.bx1) + ";\nmaxX=" + CleanFloat(STLFile.bx2) + ";");
       output.println("minY=" + CleanFloat(STLFile.by1) + ";\nmaxY=" + CleanFloat(STLFile.by2) + ";");
       output.println("minZ=" + CleanFloat(STLFile.bz1) + ";\nminZ=" + CleanFloat(STLFile.bz2) + ";\n");
-      output.println("module stl_slice(index=0) {");
+      output.println("render_select=0; // render single slice");
+      output.println("// render_select=1; // render all slices");
+      output.println("\nmodule dxf_slice(index=0) {");
       
       Slice ThisSlice;
       float Layers = STLFile.bz2/LayerThickness;
@@ -403,29 +407,24 @@ class DXFWriteProc implements Runnable{
       int sliceCount=0;
       for(float ZLevel = 0;ZLevel<(STLFile.bz2-LayerThickness);ZLevel=ZLevel+LayerThickness)
       {
-        background(153);
         DXFSliceNum = round(ZLevel / LayerThickness);
         DXFSliceFileName = DXFSliceFilePrefix + "_" + LayerThickness + "_" + DXFSliceNum + ".dxf";
         DXFWriteFraction = (ZLevel/(STLFile.bz2-LayerThickness));
         print("DXF Slice File Name: " + DXFSliceFileName + "\n");
-        beginRaw(DXF, DXFSliceFileName);
+	pgDxf=createGraphics(round(BuildPlatformWidth),round(BuildPlatformHeight),DXF,DXFSliceFileName);
+	pgDxf.beginDraw();
         ThisSlice = new Slice(STLFile,ZLevel);
-        pushMatrix();
-        beginShape();
         lin = (Line2D) ThisSlice.Lines.get(0);
         for(int j = 0;j<ThisSlice.Lines.size();j++)
         {
           lin = (Line2D) ThisSlice.Lines.get(j);
-          line(lin.x1+renderWidth/2, lin.y1+renderHeight/2, LayerThickness*DXFSliceNum, 
-            lin.x2+renderWidth/2, lin.y2+renderHeight/2, LayerThickness*DXFSliceNum);
+          pgDxf.line(lin.x1, lin.y1, lin.x2, lin.y2);
         }
-        endShape(CLOSE);
-        popMatrix();
-        endRaw();
+	pgDxf.endDraw();
+	pgDxf.dispose();
         output.println(" if(index>="+sliceCount+"&&index<(1+"+sliceCount+")) {");
-        output.println("  echo(\"  Extruding slice "+DXFSliceNum+".\");");
-        output.println("  translate([0,0,layerThickness*"+DXFSliceNum+"]) linear_extrude(file=\""
-          + DXFSliceFileName + "\", height=layerHeight, convexity = 10);\n" );
+        output.println("  echo(\"  Instantiating slice "+DXFSliceNum+".\");");
+        output.println("  import_dxf(file=\"" + DXFSliceFileName + "\");\n" );
         output.println(" }");
         sliceCount++;
       }
@@ -433,9 +432,17 @@ class DXFWriteProc implements Runnable{
       output.println("  echo(\"ERROR: Out of index bounds.\");");
       output.println(" }");
       output.println("}");
-      output.println("function get_stl_slice_count() = "+sliceCount+";");
-      output.println("render_slice=(get_stl_slice_count()-1)*$t; // Use OpenSCAD Animation to step thru slices.");
-      output.println("stl_slice(index=render_slice);");
+      output.println("function get_dxf_slice_count() = "+sliceCount+";\n");
+      output.println("render_slice=(get_dxf_slice_count()-1)*$t; // Use OpenSCAD Animation to step thru slices.\n");
+      output.println("if(render_select==0) {");
+      output.println("  dxf_slice(index=render_slice);");
+      output.println("}\n");
+      output.println("if(render_select==1) {");
+      output.println("  for( i=[0:get_dxf_slice_count()-1] ) {");
+      output.println("    translate([0,0,i*layerThickness])");
+      output.println("      dxf_slice(index=i);");
+      output.println("  }");
+      output.println("}\n");
 
       output.flush();
       output.close();
@@ -448,7 +455,7 @@ class DXFWriteProc implements Runnable{
       print("Z: " + CleanFloat(STLFile.bz1) + " - " + CleanFloat(STLFile.bz2) + "   ");
       if(STLFile.bz1<0)print("\n(Values below z=0 not exported.)");
 
-      open(OpenSCADFileName);
+      // open(OpenSCADFileName);
 
       MeshHeight=STLFile.bz2-STLFile.bz1;
       STLLoadedFlag = true;
