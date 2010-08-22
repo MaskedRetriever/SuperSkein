@@ -162,10 +162,6 @@ class GUITextBox{
     else Focus=false;
   }
   
-  float getFloat()
-  {
-    return Float.parseFloat(Text);
-  }
   
 }
 
@@ -185,29 +181,6 @@ class GUIFloatBox{
     Valid = true;
   }
 
-  boolean hasFloat()
-  {
-    int DecNum=0;
-    int Start=0;
-    if(Text.length()<1)return false;
-    
-    if(Text.charAt(0)=='-')Start=1;//allow negative numbers
-    for(int i=Start;i<Text.length();i++)
-    {
-      int charval=Text.charAt(i);
-      if(charval==46)
-      {
-        DecNum++;
-      }
-      else
-      {
-        if(charval<48)return false;
-        if(charval>57)return false;
-      }
-    }
-    if(DecNum<2)return true;
-    else return false;
-  }
   
   boolean over(int ix,int iy)
   {
@@ -237,8 +210,8 @@ class GUIFloatBox{
     if(Focus){
       if((KeyStroke==8)&(Text.length()>0))Text=Text.substring(0,Text.length()-1);
       if((KeyStroke>31)&(KeyStroke<177))Text = Text + char(KeyStroke);
+      Valid=true;
     }
-    Valid = this.hasFloat();
   }
   
   void checkFocus(int X, int Y)
@@ -249,7 +222,12 @@ class GUIFloatBox{
   
   float getFloat()
   {
-    return Float.parseFloat(Text);
+    try{return Float.parseFloat(Text);}
+    catch(Exception e)
+    {
+      Valid=false;
+      return Float.NaN;
+    }
   }
   
   void setFloat(float in)

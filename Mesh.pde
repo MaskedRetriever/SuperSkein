@@ -32,6 +32,7 @@ class Mesh {
   
   void Scale(float Factor)
   {
+    if(Float.isNaN(Factor))return;
     for(int i = Triangles.size()-1;i>=0;i--)
     {
       Triangle tri = (Triangle) Triangles.get(i);
@@ -53,6 +54,7 @@ class Mesh {
 
   void RotateX(float Angle)
   {
+    if(Float.isNaN(Angle))return;
     for(int i = Triangles.size()-1;i>=0;i--)
     {
       Triangle tri = (Triangle) Triangles.get(i);

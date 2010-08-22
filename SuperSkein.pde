@@ -304,6 +304,7 @@ class STLLoadProc implements Runnable{
       STLFile = new Mesh(STLName.Text);
 
       //Scale and locate the mesh
+      //These will do nothing if these methods return NaN
       STLFile.Scale(STLScale.getFloat());
       STLFile.RotateX(STLXRotate.getFloat()*180/PI);
       //Put the mesh in the middle of the platform:
