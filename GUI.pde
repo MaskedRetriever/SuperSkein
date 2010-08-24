@@ -211,6 +211,7 @@ class GUIFloatBox{
       if((KeyStroke==8)&(Text.length()>0))Text=Text.substring(0,Text.length()-1);
       if((KeyStroke>31)&(KeyStroke<177))Text = Text + char(KeyStroke);
       Valid=true;
+      redraw();
     }
   }
   

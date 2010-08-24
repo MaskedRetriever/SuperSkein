@@ -116,7 +116,7 @@ void setup(){
   PrintHeadSpeed = MyConfig.PrintHeadSpeed;
   LayerThickness = MyConfig.LayerThickness;
   Sink = MyConfig.Sink;
-
+  noLoop();
 }
 
 //This executes on Exit
@@ -175,7 +175,6 @@ void draw()
     STLLoadProgress.update(STLLoadFraction);
     STLLoadButton.display();
     STLLoadProgress.display();
-
   }
 
 
@@ -193,7 +192,6 @@ void draw()
 
     Line2D Intersection;
     Slice = new ArrayList();
-
 
     //Draw the grid
     stroke(80);
@@ -251,15 +249,15 @@ void mousePressed()
   if(RightButton.over(mouseX,mouseY))GUIPage++;
   if(GUIPage==3)GUIPage=0;
   if(GUIPage==-1)GUIPage=1;
+  redraw();
 }
 
 void keyTyped()
 {
   if(GUIPage==0)STLName.doKeystroke(key);
   if(GUIPage==0)STLScale.doKeystroke(key);
-  if(GUIPage==0)STLXRotate.doKeystroke(key);
-  
- 
+  if(GUIPage==0)STLXRotate.doKeystroke(key);  
+  redraw();
 }
 
 
