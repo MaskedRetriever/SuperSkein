@@ -313,6 +313,7 @@ class STLLoadProc implements Runnable{
       MeshHeight=STLFile.bz2-STLFile.bz1;
       STLLoadFraction = 1.1;
       STLLoadedFlag = true;
+      redraw();
     }
   }
 }
@@ -367,6 +368,7 @@ class FileWriteProc implements Runnable{
 
       MeshHeight=STLFile.bz2-STLFile.bz1;
       STLLoadedFlag = true;
+      redraw();
     }
   }
 }
@@ -474,6 +476,7 @@ class DXFWriteProc implements Runnable{
 
       MeshHeight=STLFile.bz2-STLFile.bz1;
       STLLoadedFlag = true;
+      redraw();
     }
   }
 }
