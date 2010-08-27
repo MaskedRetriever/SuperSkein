@@ -405,6 +405,7 @@ class DXFWriteProc implements Runnable{
       output.println("\nmodule dxf_slice(index=0) {");
       
       Slice ThisSlice;
+      ArrayList PolyArray;
       float Layers = STLFile.bz2/LayerThickness;
       int renderWidth=width, renderHeight=height;
       int sliceCount=0;
@@ -418,6 +419,8 @@ class DXFWriteProc implements Runnable{
         pgDxf.setLayer(DXFSliceNum);
         DXFWriteFraction = (ZLevel/(STLFile.bz2-LayerThickness));
         ThisSlice = new Slice(STLFile,ZLevel);
+        Poly2D ThisPoly2D = new Poly2D(0.01);
+	PolyArray = ThisPoly2D.Slice2Poly2DList(ThisSlice);
         lin = (Line2D) ThisSlice.Lines.get(0);
         for(int j = 0;j<ThisSlice.Lines.size();j++)
         {
