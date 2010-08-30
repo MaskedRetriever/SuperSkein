@@ -295,7 +295,7 @@ class STLLoadProc implements Runnable{
   {
     while(true)
     {
-      while(!STLLoadTrigger);
+      while(!STLLoadTrigger)delay(300);
       STLLoadTrigger = false;
       STLLoadFraction = 0.0;
       STLLoadProgress.message("STL Load May Take a Minute or more...");
@@ -322,7 +322,7 @@ class STLLoadProc implements Runnable{
 class FileWriteProc implements Runnable{
   public void run(){
     while(true){
-      while(!FileWriteTrigger);
+      while(!FileWriteTrigger)delay(300);
       FileWriteTrigger=false;//Only do this once per command.
       Line2D Intersection;
       Line2D lin;
@@ -377,7 +377,7 @@ class FileWriteProc implements Runnable{
 class DXFWriteProc implements Runnable{
   public void run(){
     while(true){
-      while(!DXFWriteTrigger);
+      while(!DXFWriteTrigger)delay(300);
       DXFWriteTrigger=false;//Only do this once per command.
       // GUIPage=2;
       Line2D Intersection;
