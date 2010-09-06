@@ -1,32 +1,28 @@
 // Line Class
 // Once we have the slices as 2D lines,
 // we never look back.
-// From this version (1.3ish?) Line2D will
+// From this version (1.3ish?) SSLine will
 // have both SPEED and PLASTIC FLOW RATE.
-class Line2D {
+import java.awt.geom.Line2D;
+
+class SSLine extends Line2D.Float {
   
-  float x1,y1,x2,y2;
+//  float x1,y1,x2,y2;
   
   float HeadSpeed;
   float Flowrate;
   
   final float epsilon = 1e-6;
   
-  Line2D(float nx1, float ny1, float nx2, float ny2) {
-    x1=nx1;
-    x2=nx2;
-    y1=ny1;
-    y2=ny2;
+  SSLine(float nx1, float ny1, float nx2, float ny2) {
+    super(nx1,ny1,nx2,ny2);
     HeadSpeed = 1000; //By default it at least does move.
     Flowrate = 0; //By default the plastic does not flow.
   }
 
 
-  Line2D(PVector pt1, PVector pt2) {
-    x1 = pt1.x;
-    y1 = pt1.y;
-    x2 = pt2.x;
-    y2 = pt2.y;
+  SSLine(PVector pt1, PVector pt2) {
+    super(pt1.x,pt1.y,pt2.x,pt2.y);
     HeadSpeed = 1000; //By default it at least does move.
     Flowrate = 0; //By default the plastic does not flow.
   }
@@ -168,7 +164,7 @@ class Line2D {
   // Returns null if the two line segments don't intersect each other.
   // Otherwise returns intersection point as a PVector.
   // NOTE: coincident lines don't count as intersecting.
-  PVector FindSegmentsIntersection(Line2D line2)
+  PVector FindSegmentsIntersection(SSLine line2)
   {
     float dx1 = x2 - x1;
     float dy1 = y2 - y1;
@@ -208,7 +204,7 @@ class Line2D {
   // Returns null if the two extended lines are parallel.
   // Otherwise returns intersection point as a PVector.
   // NOTE: coincident lines don't count as intersecting.
-  PVector FindExtendedLinesIntersection(Line2D line2)
+  PVector FindExtendedLinesIntersection(SSLine line2)
   {
     float dx1 = x2 - x1;
     float dy1 = y2 - y1;
@@ -239,9 +235,9 @@ class Line2D {
   }
 
 
-  // Returns a Line2D of the current segment, if it were shifted
+  // Returns a SSLine of the current segment, if it were shifted
   // to the right by the given amount.
-  Line2D Offset(float offsetby)
+  SSLine Offset(float offsetby)
   {
     float ang = this.RadianAngle();
     float perpang = ang - HALF_PI;
@@ -249,7 +245,7 @@ class Line2D {
     float nuy1 = y1 + offsetby * sin(perpang);
     float nux2 = x2 + offsetby * cos(perpang);
     float nuy2 = y2 + offsetby * sin(perpang);
-    return new Line2D(nux1, nuy1, nux2, nuy2);
+    return new SSLine(nux1, nuy1, nux2, nuy2);
   }
   
   
@@ -258,13 +254,13 @@ class Line2D {
   // amount.  The end point of the first line segment must be the
   // exact same point as the start point of the second line.
   // Returns null if the two lines aren't joined.
-  PVector FindOffsetIntersectionByBisection(Line2D line2, float offsetby)
+  PVector FindOffsetIntersectionByBisection(SSLine line2, float offsetby)
   {
     if (x2 != line2.x1 || y2 != line2.y1) {
       return null;
     }
-    Line2D offline1 = this.Offset(offsetby);
-    Line2D offline2 = line2.Offset(offsetby);
+    SSLine offline1 = this.Offset(offsetby);
+    SSLine offline2 = line2.Offset(offsetby);
     return offline1.FindExtendedLinesIntersection(offline2);
   }
 }

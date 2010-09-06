@@ -61,8 +61,8 @@ class Path2D {
       return false;
     }
     PVector testpoint2 = new PVector(testpoint.x, testpoint.y+1e9);
-    Line2D testline = new Line2D(testpoint, testpoint2);
-    Line2D segment = new Line2D(0,0,0,0);
+    SSLine testline = new SSLine(testpoint, testpoint2);
+    SSLine segment = new SSLine(0,0,0,0);
 
     int isectCount = 0;
     PVector pt2 = (PVector)pathArray.get(0);

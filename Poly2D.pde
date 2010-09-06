@@ -46,11 +46,11 @@ class Poly2D extends Polygon{
   ArrayList Slice2Poly2DList(Slice thisSlice) {
     ArrayList nuAL=new ArrayList();
     Poly2D nuP2D=new Poly2D(gridScale);
-    Line2D prevLine=(Line2D) thisSlice.Lines.get(0);
+    SSLine prevLine=(SSLine) thisSlice.Lines.get(0);
     PVector startPt = prevLine.getPoint1();
     nuP2D.addPoint(startPt.x,startPt.y);
     for(int i = 1; i<thisSlice.Lines.size(); i++ ) {
-      Line2D thisLine=(Line2D) thisSlice.Lines.get(i);
+      SSLine thisLine=(SSLine) thisSlice.Lines.get(i);
       PVector prevPt = prevLine.getPoint2(); 
       PVector currPt = thisLine.getPoint1();
       if(abs(prevPt.x-currPt.x)<epsilon && abs(prevPt.y-currPt.y)<epsilon) {
@@ -68,7 +68,7 @@ class Poly2D extends Polygon{
 	if(i<thisSlice.Lines.size()) {
           nuAL.add(nuP2D);
           nuP2D=new Poly2D(gridScale);
-          prevLine=(Line2D) thisSlice.Lines.get(i);
+          prevLine=(SSLine) thisSlice.Lines.get(i);
           startPt=prevLine.getPoint1();
 	  nuP2D.addPoint(startPt.x,startPt.y);
 	} else {

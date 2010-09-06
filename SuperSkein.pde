@@ -190,7 +190,7 @@ void draw()
     fill(255);
     text("MeshMRI",width/2,15);
 
-    Line2D Intersection;
+    SSLine Intersection;
     Slice = new ArrayList();
 
     //Draw the grid
@@ -213,8 +213,8 @@ void draw()
       strokeWeight(2);
       for(int i = Slice.size()-1;i>=0;i--)
       {
-        Line2D lin = (Line2D) Slice.get(i);
-        Line2D newLine = new Line2D(lin.x1,lin.y1,lin.x2,lin.y2);
+        SSLine lin = (SSLine) Slice.get(i);
+        SSLine newLine = new SSLine(lin.x1,lin.y1,lin.x2,lin.y2);
         //Translate into Display Coordinates
         newLine.Scale(DisplayScale);
         newLine.Rotate(PI);
@@ -324,8 +324,8 @@ class FileWriteProc implements Runnable{
     while(true){
       while(!FileWriteTrigger)delay(300);
       FileWriteTrigger=false;//Only do this once per command.
-      Line2D Intersection;
-      Line2D lin;
+      SSLine Intersection;
+      SSLine lin;
       String GCodeFileName = selectOutput("Save G-Code to This File");
       if(GCodeFileName == null) {
         println("No file was selected; using STL File as G-Code file prefix.");
@@ -348,11 +348,11 @@ class FileWriteProc implements Runnable{
       {
         FileWriteFraction = (ZLevel/(STLFile.bz2-LayerThickness));
         ThisSlice = new Slice(STLFile,ZLevel);
-        lin = (Line2D) ThisSlice.Lines.get(0);
+        lin = (SSLine) ThisSlice.Lines.get(0);
         output.println("G1 X" + lin.x1 + " Y" + lin.y1 + " Z" + ZLevel + " F" + PrintHeadSpeed);
         for(int j = 0;j<ThisSlice.Lines.size();j++)
         {
-          lin = (Line2D) ThisSlice.Lines.get(j);
+          lin = (SSLine) ThisSlice.Lines.get(j);
           output.println("G1 X" + lin.x2 + " Y" + lin.y2 + " Z" + ZLevel + " F" + PrintHeadSpeed);
         }
       }
@@ -380,8 +380,8 @@ class DXFWriteProc implements Runnable{
       while(!DXFWriteTrigger)delay(300);
       DXFWriteTrigger=false;//Only do this once per command.
       // GUIPage=2;
-      Line2D Intersection;
-      Line2D lin;
+      SSLine Intersection;
+      SSLine lin;
       
       String DXFSliceFilePrefix = selectOutput("Save Results to This File Path and Prefix");
       if(DXFSliceFilePrefix == null) {
@@ -421,10 +421,10 @@ class DXFWriteProc implements Runnable{
         ThisSlice = new Slice(STLFile,ZLevel);
         Poly2D ThisPoly2D = new Poly2D(0.01);
 	PolyArray = ThisPoly2D.Slice2Poly2DList(ThisSlice);
-        lin = (Line2D) ThisSlice.Lines.get(0);
+        lin = (SSLine) ThisSlice.Lines.get(0);
         for(int j = 0;j<ThisSlice.Lines.size();j++)
         {
-          lin = (Line2D) ThisSlice.Lines.get(j);
+          lin = (SSLine) ThisSlice.Lines.get(j);
           pgDxf.line(lin.x1, lin.y1, lin.x2, lin.y2);
         }
         output.println(" if(index>="+DXFSliceNum+"&&index<(1+"+DXFSliceNum+")) {");

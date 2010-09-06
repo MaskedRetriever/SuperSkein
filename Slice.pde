@@ -11,7 +11,7 @@ class Slice {
   Slice(Mesh InMesh, float ZLevel) {
     
     ArrayList UnsortedLines;
-    Line2D Intersection;
+    SSLine Intersection;
     UnsortedLines = new ArrayList();
     for(int i = InMesh.Triangles.size()-1;i>=0;i--)
     {
@@ -46,13 +46,13 @@ class Slice {
     //while(Lines.size()<FinalSize)
     while(UnsortedLines.size()>0)
     {
-      Line2D CLine = (Line2D) Lines.get(Lines.size()-1);//Get last
+      SSLine CLine = (SSLine) Lines.get(Lines.size()-1);//Get last
       iNextLine = (Lines.size()-1);
       mindist = 10000;
       boolean doflip = false;
       for(int i = UnsortedLines.size()-1;i>=0;i--)
       {
-        Line2D LineCandidate = (Line2D) UnsortedLines.get(i);
+        SSLine LineCandidate = (SSLine) UnsortedLines.get(i);
         dist         = mag(LineCandidate.x1-CLine.x2, LineCandidate.y1-CLine.y2);
         dist_flipped = mag(LineCandidate.x2-CLine.x2, LineCandidate.y2-CLine.y2); // flipped
           
@@ -91,7 +91,7 @@ class Slice {
         }
       }
 
-      Line2D LineToMove = (Line2D) UnsortedLines.get(iNextLine);
+      SSLine LineToMove = (SSLine) UnsortedLines.get(iNextLine);
       if(doflip) {
         LineToMove.Flip();
       }
