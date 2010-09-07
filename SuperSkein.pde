@@ -11,6 +11,7 @@ import java.awt.geom.PathIterator;
 float PreScale = 1;
 String FileName = "sculpt_dragon.stl";
 float XRotate = 0;
+boolean debugFlag=false;
 
 String DXFSliceFilePrefix = "dxf_slice";
 
@@ -422,25 +423,28 @@ class DXFWriteProc implements Runnable{
         ThisSlice = new Slice(STLFile,ZLevel);
         // lin = (SSLine) ThisSlice.Lines.get(0);
 	PathIterator pathIter=ThisSlice.SlicePath.getPathIterator(new AffineTransform());
-	float[] newCoords={0.0,0.0};
-	float[] prevCoords={0.0,0.0};
+	float[] newCoords={0.0,0.0,0.0,0.0,0.0,0.0};
+	float[] prevCoords={0.0,0.0,0.0,0.0,0.0,0.0};
 	int segType=pathIter.currentSegment(prevCoords);
 	pathIter.next();
 	while(!pathIter.isDone()) {
 	  segType=pathIter.currentSegment(newCoords);
 	  if(segType == PathIterator.SEG_LINETO ) {
 	    // println("  SEG_LINETO: "+newCoords[0]+" "+newCoords[1]+"\n");
-	    print(".");
+	    if(debugFlag) print(".");
 	    pgDxf.line(prevCoords[0],prevCoords[1],newCoords[0],newCoords[1]);
+	    segType=pathIter.currentSegment(prevCoords);
 	  } else if( segType==PathIterator.SEG_CLOSE) {
-	    println("  Slice: "+DXFSliceNum+"  SEG_CLOSE: "+newCoords[0]+" "+newCoords[1]+"\n");
+	    if(debugFlag) println("  Slice: "+DXFSliceNum+"  SEG_CLOSE: "+newCoords[0]+" "+newCoords[1]+"\n");
 	    pgDxf.line(prevCoords[0],prevCoords[1],newCoords[0],newCoords[1]);
+	    segType=pathIter.currentSegment(prevCoords);
 	  } else if(segType == PathIterator.SEG_MOVETO) {
-	    println("  Slice: "+DXFSliceNum+"  SEG_MOVETO: "+newCoords[0]+" "+newCoords[1]+"\n");
+	    if(debugFlag) println("  Slice: "+DXFSliceNum+"  SEG_MOVETO: "+newCoords[0]+" "+newCoords[1]+"\n");
+	    segType=pathIter.currentSegment(prevCoords);
 	  } else {
 	    println("  Slice: "+DXFSliceNum+"  segType: "+segType+"\n");
+	    segType=pathIter.currentSegment(prevCoords);
 	  }
-	  segType=pathIter.currentSegment(prevCoords);
 	  pathIter.next();
 	}
         output.println(" if(index>="+DXFSliceNum+"&&index<(1+"+DXFSliceNum+")) {");
