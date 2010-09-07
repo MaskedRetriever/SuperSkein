@@ -3,6 +3,7 @@
 class Slice {
   
   ArrayList Lines;
+  ArrayList Paths;
 
   //Right now this is all in the constructor.
   //It might make more sense to split these
@@ -97,6 +98,22 @@ class Slice {
       }
       Lines.add(LineToMove);
       UnsortedLines.remove(iNextLine);
+    }
+    Paths = new ArrayList();
+    SSLine thisLine=(SSLine) Lines.get(0);   
+    SSPath thisPath=new SSPath(thisLine);
+    Paths.add(thisPath);
+    PVector prevPt=new PVector(thisLine.x2,thisLine.y2);
+    for(int i=1;i<Lines.size();i++) {
+      SSLine newLine=(SSLine) Lines.get(i);
+      if(newLine.x1 == prevPt.x && newLine.y1 == prevPt.y) {
+        thisPath.append(newLine,true);
+      } else {
+        thisPath.closePath();
+	thisPath=new SSPath(newLine);
+        Paths.add(thisPath);
+      }
+      prevPt = new PVector(newLine.x2,newLine.y2);
     }
   }
   
