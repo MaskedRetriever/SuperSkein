@@ -420,38 +420,27 @@ class DXFWriteProc implements Runnable{
         pgDxf.setLayer(DXFSliceNum);
         DXFWriteFraction = (ZLevel/(STLFile.bz2-LayerThickness));
         ThisSlice = new Slice(STLFile,ZLevel);
-        // Poly2D ThisPoly2D = new Poly2D(0.01);
-	// PolyArray = ThisPoly2D.Slice2Poly2DList(ThisSlice);
-        lin = (SSLine) ThisSlice.Lines.get(0);
+        // lin = (SSLine) ThisSlice.Lines.get(0);
 	PathIterator pathIter=ThisSlice.SlicePath.getPathIterator(new AffineTransform());
-	float[] prevCoords={0,0,0,0,0,0};
-	int segType = pathIter.currentSegment(prevCoords);
+	float[] newCoords={0.0,0.0};
+	float[] prevCoords={0.0,0.0};
+	int segType=pathIter.currentSegment(prevCoords);
 	pathIter.next();
-//        for(int j = 0;j<ThisSlice.Lines.size();j++)
-//        {
-//          lin = (SSLine) ThisSlice.Lines.get(j);
-//          pgDxf.line(lin.x1, lin.y1, lin.x2, lin.y2);
-//        }
-	float[] newCoords={0,0,0,0,0,0};
-	float[] firstCoords=prevCoords;
 	while(!pathIter.isDone()) {
 	  segType=pathIter.currentSegment(newCoords);
 	  if(segType == PathIterator.SEG_LINETO ) {
-	    println("  SEG_LINETO: "+newCoords[0]+" "+newCoords[1]+"\n");
+	    // println("  SEG_LINETO: "+newCoords[0]+" "+newCoords[1]+"\n");
+	    print(".");
 	    pgDxf.line(prevCoords[0],prevCoords[1],newCoords[0],newCoords[1]);
-	    prevCoords=newCoords;
 	  } else if( segType==PathIterator.SEG_CLOSE) {
-	    println("  SEG_CLOSE: "+newCoords[0]+" "+newCoords[1]+"\n");
+	    println("  Slice: "+DXFSliceNum+"  SEG_CLOSE: "+newCoords[0]+" "+newCoords[1]+"\n");
 	    pgDxf.line(prevCoords[0],prevCoords[1],newCoords[0],newCoords[1]);
-	    // pgDxf.line(newCoords[0],newCoords[1],firstCoords[0],firstCoords[1]);
-	    prevCoords=newCoords;
 	  } else if(segType == PathIterator.SEG_MOVETO) {
-	    println("  SEG_MOVETO: "+newCoords[0]+" "+newCoords[1]+"\n");
-	    prevCoords=newCoords;
-	    firstCoords=newCoords;
+	    println("  Slice: "+DXFSliceNum+"  SEG_MOVETO: "+newCoords[0]+" "+newCoords[1]+"\n");
 	  } else {
-	    println("  segType: "+segType+"\n");
+	    println("  Slice: "+DXFSliceNum+"  segType: "+segType+"\n");
 	  }
+	  segType=pathIter.currentSegment(prevCoords);
 	  pathIter.next();
 	}
         output.println(" if(index>="+DXFSliceNum+"&&index<(1+"+DXFSliceNum+")) {");
