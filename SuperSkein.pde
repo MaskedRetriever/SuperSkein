@@ -350,13 +350,40 @@ class FileWriteProc implements Runnable{
       {
         FileWriteFraction = (ZLevel/(STLFile.bz2-LayerThickness));
         ThisSlice = new Slice(STLFile,ZLevel);
-        lin = (SSLine) ThisSlice.Lines.get(0);
-        output.println("G1 X" + lin.x1 + " Y" + lin.y1 + " Z" + ZLevel + " F" + PrintHeadSpeed);
-        for(int j = 0;j<ThisSlice.Lines.size();j++)
-        {
-          lin = (SSLine) ThisSlice.Lines.get(j);
-          output.println("G1 X" + lin.x2 + " Y" + lin.y2 + " Z" + ZLevel + " F" + PrintHeadSpeed);
-        }
+        // lin = (SSLine) ThisSlice.Lines.get(0);
+	PathIterator pathIter=ThisSlice.SlicePath.getPathIterator(new AffineTransform());
+	float[] newCoords={0.0,0.0,0.0,0.0,0.0,0.0};
+	float[] prevCoords={0.0,0.0,0.0,0.0,0.0,0.0};
+	int segType=pathIter.currentSegment(prevCoords);
+	// Move to starting point
+	output.println("M103");
+	output.println("G1 X" + prevCoords[0] + " Y" + prevCoords[1] + " Z" + ZLevel + " F" + PrintHeadSpeed);
+	output.println("M101");
+	pathIter.next();
+	while(!pathIter.isDone()) {
+	  segType=pathIter.currentSegment(newCoords);
+	  if(segType == PathIterator.SEG_LINETO ) {
+	    // draw line from prevCoords to newCoords
+	    output.println("G1 X" + newCoords[0] + " Y" + newCoords[1] + " Z" + ZLevel + " F" + PrintHeadSpeed);
+	    segType=pathIter.currentSegment(prevCoords);
+	  } else if(segType==PathIterator.SEG_CLOSE ) {
+	    // last segment of current path
+	    output.println("G1 X" + newCoords[0] + " Y" + newCoords[1] + " Z" + ZLevel + " F" + PrintHeadSpeed);
+	    segType=pathIter.currentSegment(prevCoords);
+	  } else if(segType==PathIterator.SEG_MOVETO ) {
+	    // move to next starting point
+	    segType=pathIter.currentSegment(prevCoords);
+	    output.println("M103");
+	    output.println("G1 X" + newCoords[0] + " Y" + newCoords[1] + " Z" + ZLevel + " F" + PrintHeadSpeed);
+	    output.println("M101");
+	    segType=pathIter.currentSegment(prevCoords);
+	  } else {
+	    // unknown segment type
+	    segType=pathIter.currentSegment(prevCoords);
+	  }
+          pathIter.next();
+	}
+	output.println("M103");
       }
       output.flush();
       output.close();

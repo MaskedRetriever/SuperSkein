@@ -12,6 +12,7 @@ class Slice {
   Slice(Mesh InMesh, float ZLevel) {
     
     ArrayList UnsortedLines;
+    // ArrayList Lines;
     SSLine Intersection;
     UnsortedLines = new ArrayList();
     for(int i = InMesh.Triangles.size()-1;i>=0;i--)
