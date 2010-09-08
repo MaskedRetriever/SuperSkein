@@ -4,6 +4,7 @@
 //Note!  Only takes binary-coded STL.  ASCII
 //STL just breaks it for now.
 import processing.dxf.*;
+import java.awt.geom.AffineTransform;
 import java.awt.geom.PathIterator;
 
 //The config file takes precedence over these parameters!
