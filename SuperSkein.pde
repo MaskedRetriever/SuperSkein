@@ -466,7 +466,7 @@ class DXFWriteProc implements Runnable{
           bridgeCheck.subtract( (SSArea) SliceAreaList.get(DXFSliceNum-1));
           if( !bridgeCheck.isEmpty() ) {
             println("  Bridges found in "+DXFSliceNum);
-            bridgeCheck.makeShell(0.25);
+            // bridgeCheck.makeShell(0.25);
             bridgeCheck.intersect(thisArea);
             thisShell.add(bridgeCheck);
           }
