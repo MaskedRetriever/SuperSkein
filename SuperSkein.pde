@@ -442,6 +442,7 @@ class DXFWriteProc implements Runnable{
       int sliceCount=0;
       DXFSliceFileName = DXFSliceFilePrefix + "_" + LayerThickness + ".dxf";
       print("DXF Slice File Name: " + DXFSliceFileName + "\n");
+      ArrayList SliceAreaList = new ArrayList();
       pgDxf=(RawDXF) createGraphics(round(BuildPlatformWidth),round(BuildPlatformHeight),DXF,DXFSliceFileName);
       beginRaw(pgDxf);
       for(float ZLevel = 0;ZLevel<(STLFile.bz2-LayerThickness);ZLevel=ZLevel+LayerThickness)
@@ -450,23 +451,28 @@ class DXFWriteProc implements Runnable{
         pgDxf.setLayer(DXFSliceNum);
         DXFWriteFraction = (ZLevel/(STLFile.bz2-LayerThickness));
         ThisSlice = new Slice(STLFile,ZLevel);
-	// PathIterator pathIter=ThisSlice.SlicePath.getPathIterator(new AffineTransform());
-        // lin = (SSLine) ThisSlice.Lines.get(0);
-	// Area thisArea = new Area(ThisSlice.SlicePath);
-	SSPoly path2polys = new SSPoly();
-        path2polys.setGridScale(0.01);
-        path2polys.setDebugFlag(debugFlag);
-	ArrayList PolyList = path2polys.Path2Polys(ThisSlice.SlicePath);
         SSArea thisArea = new SSArea();
-        thisArea.setGridScale(path2polys.getGridScale());
-        for(int i=0;i<PolyList.size();i++) {
-          SSPoly thisPoly=(SSPoly) PolyList.get(i);
-          thisArea.exclusiveOr(new Area((Polygon) thisPoly));
+        thisArea.setGridScale(0.01);
+        thisArea.Slice2Area(ThisSlice);
+        SliceAreaList.add(thisArea);
+        if(ZLevel>0 && ZLevel <(STLFile.bz2-2*LayerThickness)) {
+          SSArea thisShell = new SSArea();
+          thisShell.setGridScale(thisArea.getGridScale());
+          thisShell.add(thisArea);
+          thisShell.makeShell(0.5);
+          SSArea bridgeCheck = new SSArea();
+          bridgeCheck.setGridScale(thisArea.getGridScale());
+          bridgeCheck.add(thisArea);
+          bridgeCheck.subtract( (SSArea) SliceAreaList.get(DXFSliceNum-1));
+          if( !bridgeCheck.isEmpty() ) {
+            println("  Bridges found in "+DXFSliceNum);
+            bridgeCheck.makeShell(0.25);
+            bridgeCheck.intersect(thisArea);
+            thisShell.add(bridgeCheck);
+          }
+          thisArea=thisShell;
         }
-        AffineTransform scaleAreaTransform = new AffineTransform();
-        scaleAreaTransform.setToScale(thisArea.GridScale,thisArea.GridScale);
         if(debugFlag) println("\n  GridScale: "+thisArea.GridScale);
-        thisArea.transform(scaleAreaTransform);
 	PathIterator pathIter=thisArea.getPathIterator(new AffineTransform());
 	float[] newCoords={0.0,0.0,0.0,0.0,0.0,0.0};
 	float[] prevCoords={0.0,0.0,0.0,0.0,0.0,0.0};
