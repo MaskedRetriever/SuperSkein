@@ -34,10 +34,10 @@ class SSPath extends Path2D.Float {
 
   // Closes the path if it is not already closed.
   // A closed path is one that ends where it started.
-  void close()
-  {
-    super.closePath();
-  }
+//  void close()
+//  {
+//    super.closePath();
+//  }
 
 
   // If the point is inside the closed path, returns true.  False otherwise.

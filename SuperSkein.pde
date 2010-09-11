@@ -5,6 +5,7 @@
 //STL just breaks it for now.
 import processing.dxf.*;
 import java.awt.geom.AffineTransform;
+import java.awt.geom.Area;
 import java.awt.geom.PathIterator;
 
 //The config file takes precedence over these parameters!
@@ -449,11 +450,29 @@ class DXFWriteProc implements Runnable{
         pgDxf.setLayer(DXFSliceNum);
         DXFWriteFraction = (ZLevel/(STLFile.bz2-LayerThickness));
         ThisSlice = new Slice(STLFile,ZLevel);
+	// PathIterator pathIter=ThisSlice.SlicePath.getPathIterator(new AffineTransform());
         // lin = (SSLine) ThisSlice.Lines.get(0);
-	PathIterator pathIter=ThisSlice.SlicePath.getPathIterator(new AffineTransform());
+	// Area thisArea = new Area(ThisSlice.SlicePath);
+	SSPoly path2polys = new SSPoly();
+        path2polys.setGridScale(0.01);
+        path2polys.setDebugFlag(debugFlag);
+	ArrayList PolyList = path2polys.Path2Polys(ThisSlice.SlicePath);
+        SSArea thisArea = new SSArea();
+        thisArea.setGridScale(path2polys.getGridScale());
+        for(int i=0;i<PolyList.size();i++) {
+          SSPoly thisPoly=(SSPoly) PolyList.get(i);
+          thisArea.exclusiveOr(new Area((Polygon) thisPoly));
+        }
+        AffineTransform scaleAreaTransform = new AffineTransform();
+        scaleAreaTransform.setToScale(thisArea.GridScale,thisArea.GridScale);
+        if(debugFlag) println("\n  GridScale: "+thisArea.GridScale);
+        thisArea.transform(scaleAreaTransform);
+	PathIterator pathIter=thisArea.getPathIterator(new AffineTransform());
 	float[] newCoords={0.0,0.0,0.0,0.0,0.0,0.0};
 	float[] prevCoords={0.0,0.0,0.0,0.0,0.0,0.0};
-	int segType=pathIter.currentSegment(prevCoords);
+        float[] startCoords={0.0,0.0,0.0,0.0,0.0,0.0};
+    	int segType=pathIter.currentSegment(prevCoords);
+        segType=pathIter.currentSegment(startCoords);
 	pathIter.next();
 	while(!pathIter.isDone()) {
 	  segType=pathIter.currentSegment(newCoords);
@@ -463,14 +482,16 @@ class DXFWriteProc implements Runnable{
 	    pgDxf.line(prevCoords[0],prevCoords[1],newCoords[0],newCoords[1]);
 	    segType=pathIter.currentSegment(prevCoords);
 	  } else if( segType==PathIterator.SEG_CLOSE) {
-	    if(debugFlag) println("  Slice: "+DXFSliceNum+"  SEG_CLOSE: "+newCoords[0]+" "+newCoords[1]+"\n");
-	    pgDxf.line(prevCoords[0],prevCoords[1],newCoords[0],newCoords[1]);
+	    if(debugFlag) println("\n  Slice: "+DXFSliceNum+"  SEG_CLOSE: "+newCoords[0]+" "+newCoords[1]);
+	    // pgDxf.line(prevCoords[0],prevCoords[1],newCoords[0],newCoords[1]);
+	    pgDxf.line(newCoords[0],newCoords[1],startCoords[0],startCoords[1]);
 	    segType=pathIter.currentSegment(prevCoords);
 	  } else if(segType == PathIterator.SEG_MOVETO) {
-	    if(debugFlag) println("  Slice: "+DXFSliceNum+"  SEG_MOVETO: "+newCoords[0]+" "+newCoords[1]+"\n");
+	    if(debugFlag) println("\n  Slice: "+DXFSliceNum+"  SEG_MOVETO: "+newCoords[0]+" "+newCoords[1]);
 	    segType=pathIter.currentSegment(prevCoords);
+            segType=pathIter.currentSegment(startCoords);
 	  } else {
-	    println("  Slice: "+DXFSliceNum+"  segType: "+segType+"\n");
+	    println("\n  Slice: "+DXFSliceNum+"  segType: "+segType);
 	    segType=pathIter.currentSegment(prevCoords);
 	  }
 	  pathIter.next();

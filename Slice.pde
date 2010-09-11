@@ -114,6 +114,7 @@ class Slice {
       SlicePath.append(newLine,connectFlag);
       prevPt = new PVector(newLine.x2,newLine.y2);
     }
+    SlicePath.closePath();
   }
   
 } 
