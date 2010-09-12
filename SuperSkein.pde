@@ -47,7 +47,7 @@ ArrayList Slice;
 Mesh STLFile;
 PrintWriter output;
 float MeshHeight;
-RawDXF pgDxf;
+// RawDXF pgDxf;
 
 //Configuration File Object
 //Hijacks the above variables
@@ -328,67 +328,46 @@ class FileWriteProc implements Runnable{
     while(true){
       while(!FileWriteTrigger)delay(300);
       FileWriteTrigger=false;//Only do this once per command.
-      SSLine Intersection;
-      SSLine lin;
+
+      ArrayList SliceAreaList = new ArrayList();
+      for(float ZLevel = 0;ZLevel<(STLFile.bz2-LayerThickness);ZLevel=ZLevel+LayerThickness)
+      {
+        Slice ThisSlice = new Slice(STLFile,ZLevel);
+        SSArea thisArea;
+        int SliceNum = round(ZLevel / LayerThickness);
+        thisArea = new SSArea();
+        thisArea.setGridScale(0.01);
+        if(debugFlag) println("\n  GridScale: "+thisArea.GridScale);
+        thisArea.Slice2Area(ThisSlice);
+        SliceAreaList.add(SliceNum, thisArea);
+      }
+      ArrayList ShellAreaList = new ArrayList();
+      for(int ShellNum=0;ShellNum<SliceAreaList.size();ShellNum++) {
+        SSArea thisArea = (SSArea) SliceAreaList.get(ShellNum);
+        SSArea thisShell = new SSArea();
+        thisShell.setGridScale(thisArea.getGridScale());
+        thisShell.add(thisArea);
+        thisShell.makeShell(0.25);
+        SSArea thisSubArea = new SSArea();
+        thisSubArea.setGridScale(thisArea.getGridScale());
+        thisSubArea.add(thisArea);
+	thisSubArea.subtract(thisShell);
+        ShellAreaList.add(ShellNum,thisSubArea);
+      }
+
       String GCodeFileName = selectOutput("Save G-Code to This File");
       if(GCodeFileName == null) {
         println("No file was selected; using STL File as G-Code file prefix.");
         GCodeFileName=STLName.Text+".gcode";
       }
-      output = createWriter(GCodeFileName);
 
-      //Header:
-      output.println("G21");
-      output.println("G90");
-      output.println("M103");
-      output.println("M105");
-      output.println("M104 s"+OperatingTemp+".0");
-      output.println("M109 s"+FlowRate+".0");
-      output.println("M101");
+      AreaWriter gcodeOut=new AreaWriter(false,round(BuildPlatformWidth),round(BuildPlatformHeight));
+      gcodeOut.setOperatingTemp(OperatingTemp);
+      gcodeOut.setFlowRate(FlowRate);
+      gcodeOut.setLayerThickness(LayerThickness);
+      gcodeOut.setPrintHeadSpeed(PrintHeadSpeed);
 
-      Slice ThisSlice;
-      float Layers = STLFile.bz2/LayerThickness;
-      for(float ZLevel = 0;ZLevel<(STLFile.bz2-LayerThickness);ZLevel=ZLevel+LayerThickness)
-      {
-        FileWriteFraction = (ZLevel/(STLFile.bz2-LayerThickness));
-        ThisSlice = new Slice(STLFile,ZLevel);
-        // lin = (SSLine) ThisSlice.Lines.get(0);
-	PathIterator pathIter=ThisSlice.SlicePath.getPathIterator(new AffineTransform());
-	float[] newCoords={0.0,0.0,0.0,0.0,0.0,0.0};
-	float[] prevCoords={0.0,0.0,0.0,0.0,0.0,0.0};
-	int segType=pathIter.currentSegment(prevCoords);
-	// Move to starting point
-	output.println("M103");
-	output.println("G1 X" + prevCoords[0] + " Y" + prevCoords[1] + " Z" + ZLevel + " F" + PrintHeadSpeed);
-	output.println("M101");
-	pathIter.next();
-	while(!pathIter.isDone()) {
-	  segType=pathIter.currentSegment(newCoords);
-	  if(segType == PathIterator.SEG_LINETO ) {
-	    // draw line from prevCoords to newCoords
-	    output.println("G1 X" + newCoords[0] + " Y" + newCoords[1] + " Z" + ZLevel + " F" + PrintHeadSpeed);
-	    segType=pathIter.currentSegment(prevCoords);
-	  } else if(segType==PathIterator.SEG_CLOSE ) {
-	    // last segment of current path
-	    output.println("G1 X" + newCoords[0] + " Y" + newCoords[1] + " Z" + ZLevel + " F" + PrintHeadSpeed);
-	    segType=pathIter.currentSegment(prevCoords);
-	  } else if(segType==PathIterator.SEG_MOVETO ) {
-	    // move to next starting point
-	    segType=pathIter.currentSegment(prevCoords);
-	    output.println("M103");
-	    output.println("G1 X" + newCoords[0] + " Y" + newCoords[1] + " Z" + ZLevel + " F" + PrintHeadSpeed);
-	    output.println("M101");
-	    segType=pathIter.currentSegment(prevCoords);
-	  } else {
-	    // unknown segment type
-	    segType=pathIter.currentSegment(prevCoords);
-	  }
-          pathIter.next();
-	}
-	output.println("M103");
-      }
-      output.flush();
-      output.close();
+      gcodeOut.ArrayList2GCode(GCodeFileName,SliceAreaList,ShellAreaList,new ArrayList());
 
       FileWriteFraction=1.5;
       print("\nFinished Slicing!  Bounding Box is:\n");
@@ -411,8 +390,6 @@ class DXFWriteProc implements Runnable{
       while(!DXFWriteTrigger)delay(300);
       DXFWriteTrigger=false;//Only do this once per command.
       // GUIPage=2;
-      SSLine Intersection;
-      SSLine lin;
       
       String DXFSliceFilePrefix = selectOutput("Save Results to This File Path and Prefix");
       if(DXFSliceFilePrefix == null) {
@@ -420,6 +397,7 @@ class DXFWriteProc implements Runnable{
         DXFSliceFilePrefix=STLName.Text;
       }
       String DXFSliceFileName;
+      String DXFShellFileName;
       // int DXFSliceNum;
       
       String OpenSCADFileName = DXFSliceFilePrefix + "_" + LayerThickness + ".scad";
@@ -435,27 +413,20 @@ class DXFWriteProc implements Runnable{
       output.println("// render_select=1; // render all slices");
       output.println("\nmodule dxf_slice(index=0) {");
       
-      Slice ThisSlice;
       // ArrayList PolyArray;
-      float Layers = STLFile.bz2/LayerThickness;
       int renderWidth=width, renderHeight=height;
-      int sliceCount=0;
 
       ArrayList SliceAreaList = new ArrayList();
       int SliceNum;
       for(float ZLevel = 0;ZLevel<(STLFile.bz2-LayerThickness);ZLevel=ZLevel+LayerThickness)
       {
+        Slice ThisSlice = new Slice(STLFile,ZLevel);
         SSArea thisArea;
         SliceNum = round(ZLevel / LayerThickness);
-        // DXFWriteFraction = (ZLevel/(STLFile.bz2-LayerThickness));
-        ThisSlice = new Slice(STLFile,ZLevel);
         thisArea = new SSArea();
         thisArea.setGridScale(0.01);
         if(debugFlag) println("\n  GridScale: "+thisArea.GridScale);
         thisArea.Slice2Area(ThisSlice);
-        if(ZLevel>0 && ZLevel <(STLFile.bz2-2*LayerThickness)) {
-
-        }
         SliceAreaList.add(SliceNum, thisArea);
       }
       ArrayList ShellAreaList = new ArrayList();
@@ -479,54 +450,27 @@ class DXFWriteProc implements Runnable{
         }
         ShellAreaList.add(ShellNum,thisShell);
       }
-      DXFSliceFileName = DXFSliceFilePrefix + "_" + LayerThickness + ".dxf";
+
+      DXFSliceFileName = DXFSliceFilePrefix + "_slices_" + LayerThickness + ".dxf";
       print("DXF Slice File Name: " + DXFSliceFileName + "\n");
-      pgDxf=(RawDXF) createGraphics(round(BuildPlatformWidth),round(BuildPlatformHeight),DXF,DXFSliceFileName);
-      beginRaw(pgDxf);
+      AreaWriter dxfOut = new AreaWriter(false,round(BuildPlatformWidth),round(BuildPlatformHeight));
+      dxfOut.ArrayList2DXF(DXFSliceFileName,SliceAreaList);
+
+      DXFShellFileName = DXFSliceFilePrefix + "_shells_" + LayerThickness + ".dxf";
+      print("DXF Shell File Name: " + DXFShellFileName + "\n");
+      dxfOut.ArrayList2DXF(DXFShellFileName,ShellAreaList);
+
       for(int DXFSliceNum=0;DXFSliceNum<SliceAreaList.size();DXFSliceNum++) {
-        pgDxf.setLayer(DXFSliceNum);
-	SSArea thisArea=(SSArea) SliceAreaList.get(DXFSliceNum);
-	PathIterator pathIter=thisArea.getPathIterator(new AffineTransform());
-	float[] newCoords={0.0,0.0,0.0,0.0,0.0,0.0};
-	float[] prevCoords={0.0,0.0,0.0,0.0,0.0,0.0};
-        float[] startCoords={0.0,0.0,0.0,0.0,0.0,0.0};
-    	int segType=pathIter.currentSegment(prevCoords);
-        segType=pathIter.currentSegment(startCoords);
-	pathIter.next();
-	while(!pathIter.isDone()) {
-	  segType=pathIter.currentSegment(newCoords);
-	  if(segType == PathIterator.SEG_LINETO ) {
-	    // println("  SEG_LINETO: "+newCoords[0]+" "+newCoords[1]+"\n");
-	    if(debugFlag) print(".");
-	    pgDxf.line(prevCoords[0],prevCoords[1],newCoords[0],newCoords[1]);
-	    segType=pathIter.currentSegment(prevCoords);
-	  } else if( segType==PathIterator.SEG_CLOSE) {
-	    if(debugFlag) println("\n  Slice: "+DXFSliceNum+"  SEG_CLOSE: "+newCoords[0]+" "+newCoords[1]);
-	    // pgDxf.line(prevCoords[0],prevCoords[1],newCoords[0],newCoords[1]);
-	    pgDxf.line(newCoords[0],newCoords[1],startCoords[0],startCoords[1]);
-	    segType=pathIter.currentSegment(prevCoords);
-	  } else if(segType == PathIterator.SEG_MOVETO) {
-	    if(debugFlag) println("\n  Slice: "+DXFSliceNum+"  SEG_MOVETO: "+newCoords[0]+" "+newCoords[1]);
-	    segType=pathIter.currentSegment(prevCoords);
-            segType=pathIter.currentSegment(startCoords);
-	  } else {
-	    println("\n  Slice: "+DXFSliceNum+"  segType: "+segType);
-	    segType=pathIter.currentSegment(prevCoords);
-	  }
-	  pathIter.next();
-	}
         output.println(" if(index>="+DXFSliceNum+"&&index<(1+"+DXFSliceNum+")) {");
         output.println("  echo(\"  Instantiating slice "+DXFSliceNum+".\");");
         output.println("  import_dxf(file=\"" + DXFSliceFileName + "\", layer=\""+DXFSliceNum+"\");\n" );
         output.println(" }");
-        sliceCount++;
       }
-      endRaw();
-      output.println(" if(index>="+sliceCount+") {");
+      output.println(" if(index>="+SliceAreaList.size()+") {");
       output.println("  echo(\"ERROR: Out of index bounds.\");");
       output.println(" }");
       output.println("}");
-      output.println("function get_dxf_slice_count() = "+sliceCount+";\n");
+      output.println("function get_dxf_slice_count() = "+SliceAreaList.size()+";\n");
       output.println("render_slice=(get_dxf_slice_count()-1)*$t; // Use OpenSCAD Animation to step thru slices.\n");
       output.println("if(render_select==0) {");
       output.println("  dxf_slice(index=render_slice);");
