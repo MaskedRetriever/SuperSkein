@@ -420,7 +420,7 @@ class DXFWriteProc implements Runnable{
         DXFSliceFilePrefix=STLName.Text;
       }
       String DXFSliceFileName;
-      int DXFSliceNum;
+      // int DXFSliceNum;
       
       String OpenSCADFileName = DXFSliceFilePrefix + "_" + LayerThickness + ".scad";
       
@@ -440,39 +440,52 @@ class DXFWriteProc implements Runnable{
       float Layers = STLFile.bz2/LayerThickness;
       int renderWidth=width, renderHeight=height;
       int sliceCount=0;
-      DXFSliceFileName = DXFSliceFilePrefix + "_" + LayerThickness + ".dxf";
-      print("DXF Slice File Name: " + DXFSliceFileName + "\n");
+
       ArrayList SliceAreaList = new ArrayList();
-      pgDxf=(RawDXF) createGraphics(round(BuildPlatformWidth),round(BuildPlatformHeight),DXF,DXFSliceFileName);
-      beginRaw(pgDxf);
+      int SliceNum;
       for(float ZLevel = 0;ZLevel<(STLFile.bz2-LayerThickness);ZLevel=ZLevel+LayerThickness)
       {
-        DXFSliceNum = round(ZLevel / LayerThickness);
-        pgDxf.setLayer(DXFSliceNum);
-        DXFWriteFraction = (ZLevel/(STLFile.bz2-LayerThickness));
+        SSArea thisArea;
+        SliceNum = round(ZLevel / LayerThickness);
+        // DXFWriteFraction = (ZLevel/(STLFile.bz2-LayerThickness));
         ThisSlice = new Slice(STLFile,ZLevel);
-        SSArea thisArea = new SSArea();
+        thisArea = new SSArea();
         thisArea.setGridScale(0.01);
+        if(debugFlag) println("\n  GridScale: "+thisArea.GridScale);
         thisArea.Slice2Area(ThisSlice);
-        SliceAreaList.add(thisArea);
         if(ZLevel>0 && ZLevel <(STLFile.bz2-2*LayerThickness)) {
-          SSArea thisShell = new SSArea();
-          thisShell.setGridScale(thisArea.getGridScale());
-          thisShell.add(thisArea);
-          thisShell.makeShell(0.5);
+
+        }
+        SliceAreaList.add(SliceNum, thisArea);
+      }
+      ArrayList ShellAreaList = new ArrayList();
+      for(int ShellNum=0;ShellNum<SliceAreaList.size();ShellNum++) {
+        SSArea thisArea = (SSArea) SliceAreaList.get(ShellNum);
+        SSArea thisShell = new SSArea();
+        thisShell.setGridScale(thisArea.getGridScale());
+        thisShell.add(thisArea);
+        thisShell.makeShell(0.25);
+        if(ShellNum>0) {
           SSArea bridgeCheck = new SSArea();
           bridgeCheck.setGridScale(thisArea.getGridScale());
           bridgeCheck.add(thisArea);
-          bridgeCheck.subtract( (SSArea) SliceAreaList.get(DXFSliceNum-1));
+          bridgeCheck.subtract( (SSArea) SliceAreaList.get(ShellNum-1));
           if( !bridgeCheck.isEmpty() ) {
-            println("  Bridges found in "+DXFSliceNum);
+            println("  Bridges found in "+ShellNum);
             // bridgeCheck.makeShell(0.25);
             bridgeCheck.intersect(thisArea);
-            thisShell.add(bridgeCheck);
+            // thisShell.add(bridgeCheck);
           }
-          thisArea=thisShell;
         }
-        if(debugFlag) println("\n  GridScale: "+thisArea.GridScale);
+        ShellAreaList.add(ShellNum,thisShell);
+      }
+      DXFSliceFileName = DXFSliceFilePrefix + "_" + LayerThickness + ".dxf";
+      print("DXF Slice File Name: " + DXFSliceFileName + "\n");
+      pgDxf=(RawDXF) createGraphics(round(BuildPlatformWidth),round(BuildPlatformHeight),DXF,DXFSliceFileName);
+      beginRaw(pgDxf);
+      for(int DXFSliceNum=0;DXFSliceNum<SliceAreaList.size();DXFSliceNum++) {
+        pgDxf.setLayer(DXFSliceNum);
+	SSArea thisArea=(SSArea) SliceAreaList.get(DXFSliceNum);
 	PathIterator pathIter=thisArea.getPathIterator(new AffineTransform());
 	float[] newCoords={0.0,0.0,0.0,0.0,0.0,0.0};
 	float[] prevCoords={0.0,0.0,0.0,0.0,0.0,0.0};
