@@ -247,10 +247,6 @@ void mousePressed()
   if(GUIPage==0)STLName.checkFocus(mouseX,mouseY);
   if(GUIPage==0)STLScale.checkFocus(mouseX,mouseY);
   if(GUIPage==0)STLXRotate.checkFocus(mouseX,mouseY);
-  if(GUIPage==0 && STLName.Focus) {
-    String newName=selectInput("Select STL to Load");
-    STLName.Text=newName;
-  }
 
   if(LeftButton.over(mouseX,mouseY))GUIPage--;
   if(RightButton.over(mouseX,mouseY))GUIPage++;
@@ -306,6 +302,12 @@ class STLLoadProc implements Runnable{
       STLLoadTrigger = false;
       STLLoadFraction = 0.0;
       STLLoadProgress.message("STL Load May Take a Minute or more...");
+      String newName=selectInput("Select STL to Load");
+      if(newName!=null) {
+	STLName.Text=newName;
+      } else {
+	println("No STL File selected. Using "+STLName.Text);
+      }
       STLFile = new Mesh(STLName.Text);
 
       //Scale and locate the mesh
@@ -330,7 +332,15 @@ class FileWriteProc implements Runnable{
   public void run(){
     while(true){
       while(!FileWriteTrigger)delay(300);
+      String GCodeFileName = selectOutput("Save G-Code to This File");
+      if(GCodeFileName == null) {
+        println("No file was selected; using STL File as G-Code file prefix.");
+        GCodeFileName=STLName.Text+".gcode";
+      }
+
       FileWriteTrigger=false;//Only do this once per command.
+      FileWriteFraction=0.1;
+      redraw();
 
       ArrayList SliceAreaList = new ArrayList();
       for(float ZLevel = 0;ZLevel<(STLFile.bz2-LayerThickness);ZLevel=ZLevel+LayerThickness)
@@ -344,6 +354,8 @@ class FileWriteProc implements Runnable{
         thisArea.Slice2Area(ThisSlice);
         SliceAreaList.add(SliceNum, thisArea);
       }
+      FileWriteFraction=0.2;
+      redraw();
       ArrayList ShellAreaList = new ArrayList();
       for(int ShellNum=0;ShellNum<SliceAreaList.size();ShellNum++) {
         SSArea thisArea = (SSArea) SliceAreaList.get(ShellNum);
@@ -357,20 +369,20 @@ class FileWriteProc implements Runnable{
 	thisSubArea.subtract(thisShell);
         ShellAreaList.add(ShellNum,thisSubArea);
       }
+      FileWriteFraction=0.3;
+      redraw();
       Fill areaFill=new Fill(true,round(BuildPlatformWidth),round(BuildPlatformHeight),0.2);
       ArrayList FillAreaList = areaFill.GenerateFill(ShellAreaList);
 
-      String GCodeFileName = selectOutput("Save G-Code to This File");
-      if(GCodeFileName == null) {
-        println("No file was selected; using STL File as G-Code file prefix.");
-        GCodeFileName=STLName.Text+".gcode";
-      }
-
+      FileWriteFraction=0.5;
+      redraw();
       AreaWriter gcodeOut=new AreaWriter(debugFlag,round(BuildPlatformWidth),round(BuildPlatformHeight));
       gcodeOut.setOperatingTemp(OperatingTemp);
       gcodeOut.setFlowRate(FlowRate);
       gcodeOut.setLayerThickness(LayerThickness);
       gcodeOut.setPrintHeadSpeed(PrintHeadSpeed);
+      FileWriteFraction=0.7;
+      redraw();
 
       gcodeOut.ArrayList2GCode(GCodeFileName,SliceAreaList,ShellAreaList,FillAreaList);
 
@@ -395,6 +407,8 @@ class DXFWriteProc implements Runnable{
       while(!DXFWriteTrigger)delay(300);
       DXFWriteTrigger=false;//Only do this once per command.
       // GUIPage=2;
+      DXFWriteFraction=0.1;
+      redraw();
       
       String DXFSliceFilePrefix = selectOutput("Save Results to This File Path and Prefix");
       if(DXFSliceFilePrefix == null) {
@@ -422,6 +436,8 @@ class DXFWriteProc implements Runnable{
       // ArrayList PolyArray;
       int renderWidth=width, renderHeight=height;
 
+      DXFWriteFraction=0.2;
+      redraw();
       ArrayList SliceAreaList = new ArrayList();
       int SliceNum;
       for(float ZLevel = 0;ZLevel<(STLFile.bz2-LayerThickness);ZLevel=ZLevel+LayerThickness)
@@ -436,6 +452,8 @@ class DXFWriteProc implements Runnable{
         SliceAreaList.add(SliceNum, thisArea);
       }
 
+      DXFWriteFraction=0.3;
+      redraw();
       ArrayList ShellAreaList = new ArrayList();
       for(int ShellNum=0;ShellNum<SliceAreaList.size();ShellNum++) {
         SSArea thisArea = (SSArea) SliceAreaList.get(ShellNum);
@@ -458,28 +476,40 @@ class DXFWriteProc implements Runnable{
         ShellAreaList.add(ShellNum,thisShell);
       }
 
+      DXFWriteFraction=0.4;
+      redraw();
       Fill areaFill=new Fill(true,round(BuildPlatformWidth),round(BuildPlatformHeight),0.2);
       ArrayList FillAreaList = areaFill.GenerateFill(SliceAreaList);
 
+      DXFWriteFraction=0.5;
+      redraw();
       DXFSliceFileName = DXFSliceFilePrefix + "_slices_" + LayerThickness + ".dxf";
       print("DXF Slice File Name: " + DXFSliceFileName + "\n");
       AreaWriter dxfOut = new AreaWriter(false,round(BuildPlatformWidth),round(BuildPlatformHeight));
       dxfOut.ArrayList2DXF(DXFSliceFileName,SliceAreaList);
 
+      DXFWriteFraction=0.6;
+      redraw();
       DXFShellFileName = DXFSliceFilePrefix + "_shells_" + LayerThickness + ".dxf";
       print("DXF Shell File Name: " + DXFShellFileName + "\n");
       dxfOut.ArrayList2DXF(DXFShellFileName,ShellAreaList);
 
+      DXFWriteFraction=0.7;
+      redraw();
       DXFFillFileName = DXFSliceFilePrefix + "_fill_" + LayerThickness + ".dxf";
       print("DXF Fill File Name: " + DXFFillFileName + "\n");
       dxfOut.ArrayList2DXF(DXFFillFileName,FillAreaList);
 
+      DXFWriteFraction=0.8;
+      redraw();
       for(int DXFSliceNum=0;DXFSliceNum<SliceAreaList.size();DXFSliceNum++) {
         output.println(" if(index>="+DXFSliceNum+"&&index<(1+"+DXFSliceNum+")) {");
         output.println("  echo(\"  Instantiating slice "+DXFSliceNum+".\");");
         output.println("  import_dxf(file=\"" + DXFSliceFileName + "\", layer=\""+DXFSliceNum+"\");\n" );
         output.println(" }");
       }
+      DXFWriteFraction=0.9;
+      redraw();
       output.println(" if(index>="+SliceAreaList.size()+") {");
       output.println("  echo(\"ERROR: Out of index bounds.\");");
       output.println(" }");
