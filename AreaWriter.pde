@@ -136,16 +136,16 @@ class AreaWriter {
     for(int SliceNum=0;SliceNum<SliceAreaList.size();SliceNum++)
     {
       SSArea thisArea;
-      if(SliceAreaList.size()>0) {
-        thisArea = (SSArea) SliceAreaList.get(SliceNum);
-        if(!thisArea.isEmpty()) GCodeWriteArea(SliceNum, thisArea);
-      }
       if(ShellAreaList.size()>0) {
         thisArea = (SSArea) ShellAreaList.get(SliceNum);
         if(!thisArea.isEmpty()) GCodeWriteArea(SliceNum, thisArea);
       }
       if(FillAreaList.size()>0) {
         thisArea = (SSArea) FillAreaList.get(SliceNum);
+        if(!thisArea.isEmpty()) GCodeWriteArea(SliceNum, thisArea);
+      }
+      if(SliceAreaList.size()>0) {
+        thisArea = (SSArea) SliceAreaList.get(SliceNum);
         if(!thisArea.isEmpty()) GCodeWriteArea(SliceNum, thisArea);
       }
     }

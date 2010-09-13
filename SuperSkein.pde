@@ -247,7 +247,10 @@ void mousePressed()
   if(GUIPage==0)STLName.checkFocus(mouseX,mouseY);
   if(GUIPage==0)STLScale.checkFocus(mouseX,mouseY);
   if(GUIPage==0)STLXRotate.checkFocus(mouseX,mouseY);
-  if(GUIPage==0 && STLName.Focus) STLName.Text=selectInput();
+  if(GUIPage==0 && STLName.Focus) {
+    String newName=selectInput("Select STL to Load");
+    STLName.Text=newName;
+  }
 
   if(LeftButton.over(mouseX,mouseY))GUIPage--;
   if(RightButton.over(mouseX,mouseY))GUIPage++;
@@ -354,6 +357,8 @@ class FileWriteProc implements Runnable{
 	thisSubArea.subtract(thisShell);
         ShellAreaList.add(ShellNum,thisSubArea);
       }
+      Fill areaFill=new Fill(true,round(BuildPlatformWidth),round(BuildPlatformHeight),0.2);
+      ArrayList FillAreaList = areaFill.GenerateFill(ShellAreaList);
 
       String GCodeFileName = selectOutput("Save G-Code to This File");
       if(GCodeFileName == null) {
@@ -361,13 +366,13 @@ class FileWriteProc implements Runnable{
         GCodeFileName=STLName.Text+".gcode";
       }
 
-      AreaWriter gcodeOut=new AreaWriter(false,round(BuildPlatformWidth),round(BuildPlatformHeight));
+      AreaWriter gcodeOut=new AreaWriter(debugFlag,round(BuildPlatformWidth),round(BuildPlatformHeight));
       gcodeOut.setOperatingTemp(OperatingTemp);
       gcodeOut.setFlowRate(FlowRate);
       gcodeOut.setLayerThickness(LayerThickness);
       gcodeOut.setPrintHeadSpeed(PrintHeadSpeed);
 
-      gcodeOut.ArrayList2GCode(GCodeFileName,SliceAreaList,ShellAreaList,new ArrayList());
+      gcodeOut.ArrayList2GCode(GCodeFileName,SliceAreaList,ShellAreaList,FillAreaList);
 
       FileWriteFraction=1.5;
       print("\nFinished Slicing!  Bounding Box is:\n");
@@ -398,6 +403,7 @@ class DXFWriteProc implements Runnable{
       }
       String DXFSliceFileName;
       String DXFShellFileName;
+      String DXFFillFileName;
       // int DXFSliceNum;
       
       String OpenSCADFileName = DXFSliceFilePrefix + "_" + LayerThickness + ".scad";
@@ -429,6 +435,7 @@ class DXFWriteProc implements Runnable{
         thisArea.Slice2Area(ThisSlice);
         SliceAreaList.add(SliceNum, thisArea);
       }
+
       ArrayList ShellAreaList = new ArrayList();
       for(int ShellNum=0;ShellNum<SliceAreaList.size();ShellNum++) {
         SSArea thisArea = (SSArea) SliceAreaList.get(ShellNum);
@@ -451,6 +458,9 @@ class DXFWriteProc implements Runnable{
         ShellAreaList.add(ShellNum,thisShell);
       }
 
+      Fill areaFill=new Fill(true,round(BuildPlatformWidth),round(BuildPlatformHeight),0.2);
+      ArrayList FillAreaList = areaFill.GenerateFill(SliceAreaList);
+
       DXFSliceFileName = DXFSliceFilePrefix + "_slices_" + LayerThickness + ".dxf";
       print("DXF Slice File Name: " + DXFSliceFileName + "\n");
       AreaWriter dxfOut = new AreaWriter(false,round(BuildPlatformWidth),round(BuildPlatformHeight));
@@ -459,6 +469,10 @@ class DXFWriteProc implements Runnable{
       DXFShellFileName = DXFSliceFilePrefix + "_shells_" + LayerThickness + ".dxf";
       print("DXF Shell File Name: " + DXFShellFileName + "\n");
       dxfOut.ArrayList2DXF(DXFShellFileName,ShellAreaList);
+
+      DXFFillFileName = DXFSliceFilePrefix + "_fill_" + LayerThickness + ".dxf";
+      print("DXF Fill File Name: " + DXFFillFileName + "\n");
+      dxfOut.ArrayList2DXF(DXFFillFileName,FillAreaList);
 
       for(int DXFSliceNum=0;DXFSliceNum<SliceAreaList.size();DXFSliceNum++) {
         output.println(" if(index>="+DXFSliceNum+"&&index<(1+"+DXFSliceNum+")) {");
