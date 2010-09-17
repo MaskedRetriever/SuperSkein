@@ -250,9 +250,17 @@ void mousePressed()
 
   if(LeftButton.over(mouseX,mouseY))GUIPage--;
   if(RightButton.over(mouseX,mouseY))GUIPage++;
-  if(GUIPage==3)GUIPage=0;
+  if(GUIPage==2)GUIPage=0;
   if(GUIPage==-1)GUIPage=1;
   redraw();
+}
+
+void mouseMoved()
+{
+  if(GUIPage==1)
+  {
+    redraw();
+  }
 }
 
 void keyTyped()
