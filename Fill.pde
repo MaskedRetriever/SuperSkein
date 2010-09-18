@@ -27,21 +27,21 @@ class Fill {
     SparseFill = new SSArea();
     SparseFill.setGridScale(0.01);
     float wallWidth=ExtruderProperties.calcWallWidth();
-    for(float dx=0;dx<Width; dx+=2*wallWidth/fillDensity) {
-      Rectangle2D thisRect=new Rectangle2D.Float(dx,0,wallWidth/fillDensity,Height);
+    for(float dx=0;dx<2*Width; dx+=2*wallWidth/fillDensity) {
+      Rectangle2D thisRect=new Rectangle2D.Float(dx,0,wallWidth/fillDensity,2*Height);
       Area thisRectArea=new Area(thisRect);
       AffineTransform centerAreaTransform = new AffineTransform();
-      centerAreaTransform.setToTranslation(-Width/2,-Height/2);
+      centerAreaTransform.setToTranslation(-Width,-Height);
       thisRectArea.transform(centerAreaTransform);
       SparseFill.add(thisRectArea);
     }
     BridgeFill = new SSArea();
     BridgeFill.setGridScale(0.01);
-    for(float dx=0;dx<Width; dx+=2*wallWidth) {
-      Rectangle2D thisRect=new Rectangle2D.Float(dx,0,wallWidth,Height);
+    for(float dx=0;dx<2*Width; dx+=2*wallWidth) {
+      Rectangle2D thisRect=new Rectangle2D.Float(dx,0,wallWidth,2*Height);
       Area thisRectArea=new Area(thisRect);
       AffineTransform centerAreaTransform = new AffineTransform();
-      centerAreaTransform.setToTranslation(-Width/2,-Height/2);
+      centerAreaTransform.setToTranslation(-Width,-Height);
       thisRectArea.transform(centerAreaTransform);
       BridgeFill.add(thisRectArea);
     }
