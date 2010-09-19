@@ -56,7 +56,7 @@ class Fill {
       SSArea thisShell = new SSArea();
       thisShell.setGridScale(thisArea.getGridScale());
       thisShell.add(thisArea);
-      thisShell.makeShell(wallWidth);
+      thisShell.makeShell(wallWidth,8);
       // Fill mask area
       SSArea thisFill = new SSArea();
       thisFill.setGridScale(thisArea.getGridScale());

@@ -370,7 +370,7 @@ class FileWriteProc implements Runnable{
         SSArea thisShell = new SSArea();
         thisShell.setGridScale(thisArea.getGridScale());
         thisShell.add(thisArea);
-        thisShell.makeShell(0.25);
+        thisShell.makeShell(0.25,8);
         SSArea thisSubArea = new SSArea();
         thisSubArea.setGridScale(thisArea.getGridScale());
         thisSubArea.add(thisArea);
@@ -468,7 +468,7 @@ class DXFWriteProc implements Runnable{
         SSArea thisShell = new SSArea();
         thisShell.setGridScale(thisArea.getGridScale());
         thisShell.add(thisArea);
-        thisShell.makeShell(0.25);
+        thisShell.makeShell(0.25,8);
         if(ShellNum>0) {
           SSArea bridgeCheck = new SSArea();
           bridgeCheck.setGridScale(thisArea.getGridScale());
@@ -476,7 +476,7 @@ class DXFWriteProc implements Runnable{
           bridgeCheck.subtract( (SSArea) SliceAreaList.get(ShellNum-1));
           if( !bridgeCheck.isEmpty() ) {
             println("  Bridges found in "+ShellNum);
-            // bridgeCheck.makeShell(0.25);
+            // bridgeCheck.makeShell(0.25,8);
             bridgeCheck.intersect(thisArea);
             // thisShell.add(bridgeCheck);
           }
